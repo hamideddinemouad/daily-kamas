@@ -19,6 +19,7 @@ This app keeps the workflow intentionally simple:
 - Neon Postgres
 - Prisma ORM
 - Server Actions for create, update, and delete flows
+- Cookie-based login auth for one user
 
 ## Fixed Servers
 
@@ -56,6 +57,8 @@ The Prisma schema lives in [prisma/schema.prisma](/Users/mouad/Desktop/daily-kam
 - Average revenu per active day across all servers
 - Loading and error states for dashboard actions
 - Graceful setup state when `DATABASE_URL` is missing
+- Whole-site login screen with one email/password
+- Custom favicon for the app tab
 
 ## Neon Setup
 
@@ -63,13 +66,21 @@ The Prisma schema lives in [prisma/schema.prisma](/Users/mouad/Desktop/daily-kam
 
 2. Optionally add `DIRECT_URL` for Prisma CLI commands like migrations and `db push`.
 
-3. Generate Prisma Client:
+3. Add your single-user site credentials:
+
+```text
+AUTH_EMAIL=you@example.com
+AUTH_PASSWORD=your-password
+AUTH_SECRET=a-long-random-secret
+```
+
+4. Generate Prisma Client:
 
 ```bash
 npx prisma generate
 ```
 
-4. Push the schema to Neon if the database is still empty:
+5. Push the schema to Neon if the database is still empty:
 
 ```bash
 npx prisma db push
@@ -89,7 +100,7 @@ npx prisma migrate dev --name init
 npm install
 ```
 
-2. Make sure `.env` contains your Neon URL.
+2. Make sure `.env` contains your Neon URL plus `BASIC_AUTH_USERNAME` and `BASIC_AUTH_PASSWORD`.
 
 3. Start the development server:
 
@@ -126,4 +137,5 @@ http://localhost:3000
 
 - Runtime database access uses Prisma's Neon adapter.
 - Prisma CLI reads `DIRECT_URL` when available, otherwise it falls back to `DATABASE_URL`.
+- The whole site is protected by a login UI and cookie gate through [app/login/page.tsx](/Users/mouad/Desktop/daily-kamas/app/login/page.tsx), [app/auth-actions.ts](/Users/mouad/Desktop/daily-kamas/app/auth-actions.ts), and [proxy.ts](/Users/mouad/Desktop/daily-kamas/proxy.ts).
 - The displayed dashboard date formatting is presentation-only; the stored `date` comes from the database default.

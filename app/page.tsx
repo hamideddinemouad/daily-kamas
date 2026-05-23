@@ -1,4 +1,5 @@
 import { CreateEntryForm } from "@/components/create-entry-form";
+import { LogoutButton } from "@/components/logout-button";
 import { RevenueEntriesTable } from "@/components/revenue-entries-table";
 import { SERVER_OPTIONS } from "@/lib/constants";
 import { formatRevenu } from "@/lib/formatters";
@@ -32,6 +33,7 @@ export default async function Home() {
                   The date is stored automatically when the entry is created.
                 </p>
               </div>
+              <LogoutButton />
             </div>
             <CreateEntryForm />
             {!databaseConfigured ? (

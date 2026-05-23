@@ -12,3 +12,5 @@
 - Added setup and usage documentation in `README.md`
 - Switched runtime database integration to Neon using Prisma's Neon adapter
 - Removed local Docker PostgreSQL setup in favor of `.env`-based Neon configuration
+- Added a custom favicon for the app
+- Added site-wide single-user login UI with cookie-based auth

@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { Prisma } from "@prisma/client";
 import { getPrismaClient, isDatabaseConfigured } from "@/lib/prisma";
 import {
   emptyActionState,
@@ -31,7 +30,7 @@ export async function createRevenueEntry(
     await prisma.revenueEntry.create({
       data: {
         server: parsed.data.server,
-        revenu: new Prisma.Decimal(parsed.data.revenu),
+        revenu: parsed.data.revenu,
       },
     });
   } catch (error) {
@@ -83,7 +82,7 @@ export async function updateRevenueEntry(
       where: { id },
       data: {
         server: parsed.data.server,
-        revenu: new Prisma.Decimal(parsed.data.revenu),
+        revenu: parsed.data.revenu,
       },
     });
   } catch (error) {

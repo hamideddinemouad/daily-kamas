@@ -5,6 +5,9 @@ export const metadata: Metadata = {
   title: "Daily Kamas Revenue Tracker",
   description:
     "Track daily kamas revenue by server with a practical Next.js dashboard.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
