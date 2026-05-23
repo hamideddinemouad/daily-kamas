@@ -1,4 +1,5 @@
 import { CreateEntryForm } from "@/components/create-entry-form";
+import { MissingServerEntryList } from "@/components/missing-server-entry-list";
 import { LogoutButton } from "@/components/logout-button";
 import { RevenueEntriesTable } from "@/components/revenue-entries-table";
 import { SERVER_OPTIONS } from "@/lib/constants";
@@ -16,6 +17,7 @@ export default async function Home() {
     activeDaysByServer,
     grandAveragePerDay,
     activeDayCount,
+    missingServersInLast24Hours,
     databaseConfigured,
   } = await getDashboardData();
 
@@ -35,7 +37,11 @@ export default async function Home() {
               </div>
               <LogoutButton />
             </div>
-            <CreateEntryForm />
+            {missingServersInLast24Hours.length > 0 ? (
+              <MissingServerEntryList servers={missingServersInLast24Hours} />
+            ) : (
+              <CreateEntryForm />
+            )}
             {!databaseConfigured ? (
               <div className="mt-6 rounded-3xl border border-amber-300 bg-amber-100/80 px-5 py-4 text-sm text-amber-950">
                 Add your Neon `DATABASE_URL` in `.env` to enable live data. The UI is ready, but database actions are disabled until the connection string is set.

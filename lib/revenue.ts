@@ -35,6 +35,7 @@ export async function getDashboardData() {
       grandTotal: "0",
       grandAveragePerDay: "0",
       activeDayCount: 0,
+      missingServersInLast24Hours: [],
       databaseConfigured: false,
     };
   }
@@ -100,6 +101,15 @@ export async function getDashboardData() {
   );
 
   const grandTotal = grandTotalAggregate._sum.revenu?.toString() ?? "0";
+  const recentThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const recentServers = new Set(
+    entries
+      .filter((entry) => entry.createdAt >= recentThreshold)
+      .map((entry) => entry.server),
+  );
+  const missingServersInLast24Hours = SERVER_OPTIONS.filter(
+    (server) => !recentServers.has(server),
+  );
 
   return {
     entries: entries.map((entry) => ({
@@ -116,6 +126,7 @@ export async function getDashboardData() {
     grandTotal,
     grandAveragePerDay: calculateAverage(grandTotal, allActiveDays.size),
     activeDayCount: allActiveDays.size,
+    missingServersInLast24Hours,
     databaseConfigured: true,
   };
 }
