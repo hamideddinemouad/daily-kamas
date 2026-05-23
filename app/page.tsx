@@ -180,8 +180,8 @@ export default async function Home() {
                 {formatRevenu(grandAveragePerDay)}
               </p>
               <p className="mt-2 text-sm leading-6 text-stone-600">
-                Calculated across all {activeDayCount}{" "}
-                {activeDayCount === 1 ? "day" : "days"} in this month, including shorter months like February.
+                Based on {activeDayCount}{" "}
+                {activeDayCount === 1 ? "day" : "days"} in this month.
               </p>
             </div>
           </div>
