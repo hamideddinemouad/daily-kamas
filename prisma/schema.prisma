@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Server {
+  draco
+  imagiro
+  orukam
+  tylezia
+  hellmina
+  talkasha
+}
+
+model RevenueEntry {
+  id        String   @id @default(cuid())
+  server    Server
+  date      DateTime @default(now()) @db.Date
+  revenu    Decimal  @db.Decimal(18, 4)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([server])
+  @@index([date])
+}
