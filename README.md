@@ -137,5 +137,6 @@ http://localhost:3000
 
 - Runtime database access uses Prisma's Neon adapter.
 - Prisma CLI reads `DIRECT_URL` when available, otherwise it falls back to `DATABASE_URL`.
+- `postinstall` runs `prisma generate`, which is required for deployments like Vercel before Next.js typechecks the app.
 - The whole site is protected by a login UI and cookie gate through [app/login/page.tsx](/Users/mouad/Desktop/daily-kamas/app/login/page.tsx), [app/auth-actions.ts](/Users/mouad/Desktop/daily-kamas/app/auth-actions.ts), and [proxy.ts](/Users/mouad/Desktop/daily-kamas/proxy.ts).
 - The displayed dashboard date formatting is presentation-only; the stored `date` comes from the database default.
