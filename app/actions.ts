@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { formatCreatedAt, formatDate, formatRevenu } from "@/lib/formatters";
 import { getPrismaClient, isDatabaseConfigured } from "@/lib/prisma";
 import {
   emptyActionState,
@@ -27,12 +28,20 @@ export async function createRevenueEntry(
 
   try {
     const prisma = getPrismaClient();
-    await prisma.revenueEntry.create({
+    const entry = await prisma.revenueEntry.create({
       data: {
         server: parsed.data.server,
         revenu: parsed.data.revenu,
       },
     });
+
+    revalidatePath("/");
+
+    return {
+      ...emptyActionState,
+      success: true,
+      message: `${entry.server} · ${formatRevenu(entry.revenu.toString())} saved for ${formatDate(entry.date.toISOString())} at ${formatCreatedAt(entry.createdAt.toISOString())}`,
+    };
   } catch (error) {
     console.error("Failed to create revenue entry", error);
     return {
@@ -40,14 +49,6 @@ export async function createRevenueEntry(
       error: "Unable to create the revenue entry right now.",
     };
   }
-
-  revalidatePath("/");
-
-  return {
-    ...emptyActionState,
-    success: true,
-    message: "Revenue entry created.",
-  };
 }
 
 export async function updateRevenueEntry(
