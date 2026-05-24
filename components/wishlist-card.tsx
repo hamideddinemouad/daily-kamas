@@ -11,6 +11,7 @@ type WishlistItemRecord = {
 
 type WishlistCardProps = {
   databaseConfigured: boolean;
+  defaultListVisible?: boolean;
 };
 
 async function readWishlistItems() {
@@ -31,12 +32,15 @@ async function readWishlistItems() {
   return payload.items ?? [];
 }
 
-export function WishlistCard({ databaseConfigured }: WishlistCardProps) {
+export function WishlistCard({
+  databaseConfigured,
+  defaultListVisible = false,
+}: WishlistCardProps) {
   const [content, setContent] = useState("");
   const [items, setItems] = useState<WishlistItemRecord[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [isListVisible, setIsListVisible] = useState(false);
+  const [isListVisible, setIsListVisible] = useState(defaultListVisible);
   const [isLoading, startLoading] = useTransition();
   const [isSaving, startSaving] = useTransition();
   const [isDeleting, startDeleting] = useTransition();

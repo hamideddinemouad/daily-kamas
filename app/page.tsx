@@ -1,7 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { CreateEntryForm } from "@/components/create-entry-form";
 import { MissingServerEntryList } from "@/components/missing-server-entry-list";
-import { WishlistCard } from "@/components/wishlist-card";
 import { formatRevenu } from "@/lib/formatters";
 import { getDashboardData } from "@/lib/revenue";
 
@@ -73,15 +72,11 @@ export default async function Home() {
           ) : null}
         </section>
 
-        <WishlistCard databaseConfigured={databaseConfigured} />
-      </div>
+        <aside className="relative overflow-hidden rounded-[2rem] border border-amber-200/80 bg-[linear-gradient(145deg,rgba(255,251,235,0.98)_0%,rgba(254,243,199,0.96)_52%,rgba(255,237,213,0.98)_100%)] p-6 shadow-[0_24px_80px_-40px_rgba(120,53,15,0.42)] backdrop-blur sm:p-8">
+          <div className="pointer-events-none absolute right-0 top-0 h-28 w-28 rounded-full bg-amber-300/20 blur-3xl" />
+          <div className="pointer-events-none absolute bottom-0 left-0 h-24 w-24 rounded-full bg-orange-200/30 blur-2xl" />
 
-      <section className="relative overflow-hidden rounded-[2rem] border border-amber-200/80 bg-[linear-gradient(135deg,rgba(255,251,235,0.98)_0%,rgba(254,243,199,0.96)_52%,rgba(255,237,213,0.98)_100%)] p-6 shadow-[0_28px_90px_-42px_rgba(120,53,15,0.42)] backdrop-blur sm:p-8">
-        <div className="pointer-events-none absolute right-0 top-0 h-36 w-36 rounded-full bg-amber-300/25 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 left-0 h-28 w-28 rounded-full bg-orange-200/35 blur-2xl" />
-
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
+          <div className="relative">
             <div className="flex flex-wrap items-center gap-3">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-amber-900">
                 Grand Total
@@ -91,29 +86,29 @@ export default async function Home() {
               </span>
             </div>
 
-            <p className="mt-4 font-mono text-4xl font-semibold leading-none text-amber-950 sm:text-5xl">
+            <p className="mt-4 font-mono text-4xl font-semibold leading-none text-amber-950">
               {formatRevenu(grandTotal)}
             </p>
-            <p className="mt-4 max-w-xl text-sm leading-6 text-amber-950/80 sm:text-base">
+            <p className="mt-4 text-sm leading-6 text-amber-950/80 sm:text-base">
               Total kamas revenue collected from all servers for the full current
               month window.
             </p>
-          </div>
 
-          <div className="w-full max-w-sm rounded-[1.6rem] border border-white/70 bg-white/72 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_18px_40px_-30px_rgba(120,53,15,0.45)]">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
-              Avg Total Per Day
-            </p>
-            <p className="mt-3 font-mono text-3xl font-semibold text-stone-950">
-              {formatRevenu(grandAveragePerDay)}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-stone-600">
-              Based on {activeDayCount}{" "}
-              {activeDayCount === 1 ? "day" : "days"} in this month.
-            </p>
+            <div className="mt-6 rounded-[1.6rem] border border-white/75 bg-white/72 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_18px_40px_-30px_rgba(120,53,15,0.45)]">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
+                Avg Total Per Day
+              </p>
+              <p className="mt-3 font-mono text-3xl font-semibold text-stone-950">
+                {formatRevenu(grandAveragePerDay)}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-stone-600">
+                Based on {activeDayCount}{" "}
+                {activeDayCount === 1 ? "day" : "days"} in this month.
+              </p>
+            </div>
           </div>
-        </div>
-      </section>
+        </aside>
+      </div>
     </AppShell>
   );
 }

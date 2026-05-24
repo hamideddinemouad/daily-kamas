@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: "/seven-day-total", label: "7-Day Total", shortLabel: "7D Total" },
   { href: "/thirty-day-total", label: "30-Day Total", shortLabel: "30D Total" },
   { href: "/entries", label: "Recent Entries", shortLabel: "Entries" },
+  { href: "/wishlist", label: "Wishlist", shortLabel: "Wishlist" },
 ];
 
 export function AppNav() {
