@@ -26,3 +26,12 @@ model RevenueEntry {
   @@index([server])
   @@index([date])
 }
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  content   String   @db.VarChar(280)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+}

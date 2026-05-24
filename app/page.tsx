@@ -1,6 +1,7 @@
 import { AppShell } from "@/components/app-shell";
 import { CreateEntryForm } from "@/components/create-entry-form";
 import { MissingServerEntryList } from "@/components/missing-server-entry-list";
+import { WishlistCard } from "@/components/wishlist-card";
 import { formatRevenu } from "@/lib/formatters";
 import { getDashboardData } from "@/lib/revenue";
 
@@ -46,7 +47,7 @@ export default async function Home() {
         </section>
       ) : null}
 
-      <div className="grid gap-6">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)] xl:items-start">
         <section className="rounded-[2rem] border border-stone-300/70 bg-white/90 p-6 shadow-[0_24px_80px_-40px_rgba(68,46,20,0.45)] backdrop-blur sm:p-8">
           <div className="mb-6">
             <div>
@@ -71,6 +72,8 @@ export default async function Home() {
             </div>
           ) : null}
         </section>
+
+        <WishlistCard databaseConfigured={databaseConfigured} />
       </div>
 
       <section className="relative overflow-hidden rounded-[2rem] border border-amber-200/80 bg-[linear-gradient(135deg,rgba(255,251,235,0.98)_0%,rgba(254,243,199,0.96)_52%,rgba(255,237,213,0.98)_100%)] p-6 shadow-[0_28px_90px_-42px_rgba(120,53,15,0.42)] backdrop-blur sm:p-8">

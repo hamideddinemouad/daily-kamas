@@ -6,6 +6,10 @@ export type EntryActionState = {
   error: string;
 };
 
+export type WishlistInputResult =
+  | { success: true; data: { content: string } }
+  | { success: false; error: string };
+
 export const emptyActionState: EntryActionState = {
   success: false,
   message: "",
@@ -66,6 +70,38 @@ export function parseEntryInput(formData: FormData):
     data: {
       server: server as ServerOption,
       revenu: normalizedRevenu,
+    },
+  };
+}
+
+export function parseWishlistInput(content: unknown): WishlistInputResult {
+  if (typeof content !== "string") {
+    return {
+      success: false,
+      error: "Wishlist text is required.",
+    };
+  }
+
+  const normalizedContent = content.trim().replace(/\s+/g, " ");
+
+  if (normalizedContent.length === 0) {
+    return {
+      success: false,
+      error: "Wishlist text is required.",
+    };
+  }
+
+  if (normalizedContent.length > 280) {
+    return {
+      success: false,
+      error: "Wishlist text must stay under 280 characters.",
+    };
+  }
+
+  return {
+    success: true,
+    data: {
+      content: normalizedContent,
     },
   };
 }

@@ -9,12 +9,21 @@ export function isDatabaseConfigured() {
   return Boolean(process.env.DATABASE_URL);
 }
 
+function hasExpectedModelDelegates(client: PrismaClient) {
+  return (
+    typeof (client as PrismaClient & { revenueEntry?: unknown }).revenueEntry !==
+      "undefined" &&
+    typeof (client as PrismaClient & { wishlistItem?: unknown }).wishlistItem !==
+      "undefined"
+  );
+}
+
 export function getPrismaClient() {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL is not configured.");
   }
 
-  if (globalThis.prisma) {
+  if (globalThis.prisma && hasExpectedModelDelegates(globalThis.prisma)) {
     return globalThis.prisma;
   }
 
