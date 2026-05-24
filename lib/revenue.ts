@@ -35,6 +35,13 @@ export type MultiValueStat = {
   rows: SummaryStat[];
 };
 
+export type GroupedMultiValueStat = {
+  groups: {
+    label: string;
+    rows: SummaryStat[];
+  }[];
+};
+
 export type SingleValueStat = {
   value: string;
   detail?: string;
@@ -48,6 +55,8 @@ export type DashboardSnapshot = {
   averagePerEntry: StatResult<SingleValueStat>;
   entriesCountPerServer: StatResult<MultiValueStat>;
   sevenDayTotalPerServer: StatResult<MultiValueStat>;
+  sevenDayTotalBreakdown: StatResult<GroupedMultiValueStat>;
+  thirtyDayTotalBreakdown: StatResult<GroupedMultiValueStat>;
   sevenDayAveragePerDay: StatResult<MultiValueStat>;
   lastEntryTimePerServer: StatResult<MultiValueStat>;
   highestSingleEntry: StatResult<SingleValueStat>;
@@ -68,6 +77,8 @@ function createFailedSnapshot(message: string): DashboardSnapshot {
     averagePerEntry: failed(),
     entriesCountPerServer: failed(),
     sevenDayTotalPerServer: failed(),
+    sevenDayTotalBreakdown: failed(),
+    thirtyDayTotalBreakdown: failed(),
     sevenDayAveragePerDay: failed(),
     lastEntryTimePerServer: failed(),
     highestSingleEntry: failed(),
@@ -135,11 +146,35 @@ function createUtcDayRange(offsetDays = 0) {
 }
 
 function createUtcRollingRange(days: number) {
-  const { end } = createUtcDayRange(1);
+  const { end } = createUtcDayRange();
   const start = new Date(end);
   start.setUTCDate(start.getUTCDate() - days);
 
   return { start, end };
+}
+
+function createRecentUtcDateKeys(days: number) {
+  const { start } = createUtcDayRange();
+
+  return Array.from({ length: days }, (_, index) => {
+    const date = new Date(start);
+    date.setUTCDate(date.getUTCDate() - index);
+    return date.toISOString().slice(0, 10);
+  });
+}
+
+function createEmptyGroupedPeriodBreakdown(days: number): GroupedMultiValueStat {
+  const recentDateKeys = createRecentUtcDateKeys(days);
+
+  return {
+    groups: SERVER_OPTIONS.map((server) => ({
+      label: server,
+      rows: recentDateKeys.map((date) => ({
+        label: date,
+        value: "0",
+      })),
+    })),
+  };
 }
 
 function createUtcMonthRange(referenceDate = new Date()) {
@@ -181,6 +216,7 @@ export async function getDashboardData() {
   try {
     const prisma = getPrismaClient();
     const monthRange = createUtcMonthRange();
+    const todayRange = createUtcDayRange();
     const daysInMonth = getDaysInUtcMonth();
     const [entries, groupedTotals, grandTotalAggregate] = await Promise.all([
       prisma.revenueEntry.findMany({
@@ -234,14 +270,16 @@ export async function getDashboardData() {
     );
 
     const grandTotal = grandTotalAggregate._sum.revenu?.toString() ?? "0";
-    const recentThreshold = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const recentServers = new Set(
+    const serversWithEntryToday = new Set(
       entries
-        .filter((entry) => entry.createdAt >= recentThreshold)
+        .filter(
+          (entry) =>
+            entry.date >= todayRange.start && entry.date < todayRange.end,
+        )
         .map((entry) => entry.server),
     );
     const missingServersInLast24Hours = SERVER_OPTIONS.filter(
-      (server) => !recentServers.has(server),
+      (server) => !serversWithEntryToday.has(server),
     );
 
     return {
@@ -292,6 +330,14 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
       averagePerEntry: { ok: true, value: { value: "0", detail: "0 entries" } },
       entriesCountPerServer: { ok: true, value: { rows: emptyRows } },
       sevenDayTotalPerServer: { ok: true, value: { rows: emptyRows } },
+      sevenDayTotalBreakdown: {
+        ok: true,
+        value: createEmptyGroupedPeriodBreakdown(7),
+      },
+      thirtyDayTotalBreakdown: {
+        ok: true,
+        value: createEmptyGroupedPeriodBreakdown(30),
+      },
       sevenDayAveragePerDay: { ok: true, value: { rows: emptyRows } },
       lastEntryTimePerServer: {
         ok: true,
@@ -322,6 +368,9 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
 
   const todayRange = createUtcDayRange();
   const sevenDayRange = createUtcRollingRange(7);
+  const thirtyDayRange = createUtcRollingRange(30);
+  const recentDateKeys = createRecentUtcDateKeys(7);
+  const thirtyDayDateKeys = createRecentUtcDateKeys(30);
 
   const [
     todayTotal,
@@ -331,6 +380,8 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     averagePerEntry,
     entriesCountPerServer,
     sevenDayTotalPerServer,
+    sevenDayTotalBreakdown,
+    thirtyDayTotalBreakdown,
     sevenDayAveragePerDay,
     lastEntryTimePerServer,
     highestSingleEntry,
@@ -499,6 +550,82 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
       };
     }),
     getSafeStat(async () => {
+      const entries = await prisma.revenueEntry.findMany({
+        where: {
+          date: {
+            gte: sevenDayRange.start,
+            lt: sevenDayRange.end,
+          },
+        },
+        select: {
+          server: true,
+          date: true,
+          revenu: true,
+        },
+      });
+
+      const totalsByServerAndDate = new Map<string, number>();
+
+      for (const entry of entries) {
+        const dayKey = entry.date.toISOString().slice(0, 10);
+        const aggregateKey = `${entry.server}:${dayKey}`;
+        const previousValue = totalsByServerAndDate.get(aggregateKey) ?? 0;
+
+        totalsByServerAndDate.set(
+          aggregateKey,
+          previousValue + Number.parseFloat(entry.revenu.toString() ?? "0"),
+        );
+      }
+
+      return {
+        groups: SERVER_OPTIONS.map((server) => ({
+          label: server,
+          rows: recentDateKeys.map((date) => ({
+            label: date,
+            value: (totalsByServerAndDate.get(`${server}:${date}`) ?? 0).toString(),
+          })),
+        })),
+      };
+    }),
+    getSafeStat(async () => {
+      const entries = await prisma.revenueEntry.findMany({
+        where: {
+          date: {
+            gte: thirtyDayRange.start,
+            lt: thirtyDayRange.end,
+          },
+        },
+        select: {
+          server: true,
+          date: true,
+          revenu: true,
+        },
+      });
+
+      const totalsByServerAndDate = new Map<string, number>();
+
+      for (const entry of entries) {
+        const dayKey = entry.date.toISOString().slice(0, 10);
+        const aggregateKey = `${entry.server}:${dayKey}`;
+        const previousValue = totalsByServerAndDate.get(aggregateKey) ?? 0;
+
+        totalsByServerAndDate.set(
+          aggregateKey,
+          previousValue + Number.parseFloat(entry.revenu.toString() ?? "0"),
+        );
+      }
+
+      return {
+        groups: SERVER_OPTIONS.map((server) => ({
+          label: server,
+          rows: thirtyDayDateKeys.map((date) => ({
+            label: date,
+            value: (totalsByServerAndDate.get(`${server}:${date}`) ?? 0).toString(),
+          })),
+        })),
+      };
+    }),
+    getSafeStat(async () => {
       const grouped = await prisma.revenueEntry.groupBy({
         by: ["server"],
         where: {
@@ -606,6 +733,8 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     averagePerEntry,
     entriesCountPerServer,
     sevenDayTotalPerServer,
+    sevenDayTotalBreakdown,
+    thirtyDayTotalBreakdown,
     sevenDayAveragePerDay,
     lastEntryTimePerServer,
     highestSingleEntry,

@@ -16,11 +16,11 @@ export function MissingServerEntryList({
     <div className="space-y-4">
       <div>
         <h3 className="text-lg font-semibold text-stone-950">
-          Missing Entries In The Last 24 Hours
+          Missing Entries For Today
         </h3>
         <p className="mt-1 text-sm text-stone-600">
-          Fill these servers in order first. Once every server has a recent
-          entry, the normal dropdown form will come back.
+          Fill these servers in order first. Once every server has an entry for
+          today, the normal dropdown form will come back.
         </p>
       </div>
 
