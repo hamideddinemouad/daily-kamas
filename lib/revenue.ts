@@ -49,6 +49,7 @@ export type SingleValueStat = {
 
 export type DashboardSnapshot = {
   todayTotal: StatResult<SingleValueStat>;
+  todayTotalPerServer: StatResult<MultiValueStat>;
   todayCoverage: StatResult<SingleValueStat>;
   bestServer: StatResult<SingleValueStat>;
   bestServerToday: StatResult<SingleValueStat>;
@@ -71,6 +72,7 @@ function createFailedSnapshot(message: string): DashboardSnapshot {
 
   return {
     todayTotal: failed(),
+    todayTotalPerServer: failed(),
     todayCoverage: failed(),
     bestServer: failed(),
     bestServerToday: failed(),
@@ -318,6 +320,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
 
     return {
       todayTotal: { ok: true, value: { value: "0", detail: "No database yet" } },
+      todayTotalPerServer: { ok: true, value: { rows: emptyRows } },
       todayCoverage: {
         ok: true,
         value: { value: `0/${SERVER_OPTIONS.length}`, detail: "No database yet" },
@@ -374,6 +377,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
 
   const [
     todayTotal,
+    todayTotalPerServer,
     todayCoverage,
     bestServer,
     bestServerToday,
@@ -401,6 +405,30 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
       return {
         value: aggregate._sum.revenu?.toString() ?? "0",
         detail: todayRange.start.toISOString().slice(0, 10),
+      };
+    }),
+    getSafeStat(async () => {
+      const grouped = await prisma.revenueEntry.groupBy({
+        by: ["server"],
+        where: {
+          date: {
+            gte: todayRange.start,
+            lt: todayRange.end,
+          },
+        },
+        _sum: { revenu: true },
+      });
+      const totals = createEmptyStringRecord();
+
+      for (const item of grouped) {
+        totals[item.server] = item._sum.revenu?.toString() ?? "0";
+      }
+
+      return {
+        rows: SERVER_OPTIONS.map((server) => ({
+          label: server,
+          value: totals[server],
+        })),
       };
     }),
     getSafeStat(async () => {
@@ -727,6 +755,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
 
   return {
     todayTotal,
+    todayTotalPerServer,
     todayCoverage,
     bestServer,
     bestServerToday,

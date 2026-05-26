@@ -194,6 +194,11 @@ export function SnapshotStatsSection({
           result={snapshot.todayTotal}
           valueDisplay="revenue"
         />
+        <ListStatCard
+          title="Today Total Per Server"
+          result={snapshot.todayTotalPerServer}
+          valueDisplay="revenue"
+        />
         <SingleStatCard
           title="Best Server"
           result={snapshot.bestServer}
