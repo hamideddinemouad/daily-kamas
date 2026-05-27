@@ -272,6 +272,8 @@ export async function getDashboardData() {
     );
 
     const grandTotal = grandTotalAggregate._sum.revenu?.toString() ?? "0";
+    // Business rule: the daily entry checklist resets at midnight UTC, not
+    // exactly 24 hours after the last entry was created.
     const serversWithEntryToday = new Set(
       entries
         .filter(
