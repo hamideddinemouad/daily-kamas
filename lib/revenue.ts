@@ -55,6 +55,7 @@ export type DashboardSnapshot = {
   bestServerToday: StatResult<SingleValueStat>;
   averagePerEntry: StatResult<SingleValueStat>;
   entriesCountPerServer: StatResult<MultiValueStat>;
+  sevenDayTotal: StatResult<SingleValueStat>;
   sevenDayTotalPerServer: StatResult<MultiValueStat>;
   sevenDayTotalBreakdown: StatResult<GroupedMultiValueStat>;
   thirtyDayTotalBreakdown: StatResult<GroupedMultiValueStat>;
@@ -78,6 +79,7 @@ function createFailedSnapshot(message: string): DashboardSnapshot {
     bestServerToday: failed(),
     averagePerEntry: failed(),
     entriesCountPerServer: failed(),
+    sevenDayTotal: failed(),
     sevenDayTotalPerServer: failed(),
     sevenDayTotalBreakdown: failed(),
     thirtyDayTotalBreakdown: failed(),
@@ -334,6 +336,10 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
       },
       averagePerEntry: { ok: true, value: { value: "0", detail: "0 entries" } },
       entriesCountPerServer: { ok: true, value: { rows: emptyRows } },
+      sevenDayTotal: {
+        ok: true,
+        value: { value: "0", detail: "No database yet" },
+      },
       sevenDayTotalPerServer: { ok: true, value: { rows: emptyRows } },
       sevenDayTotalBreakdown: {
         ok: true,
@@ -379,6 +385,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
 
   const [
     todayTotal,
+    sevenDayTotal,
     todayTotalPerServer,
     todayCoverage,
     bestServer,
@@ -407,6 +414,27 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
       return {
         value: aggregate._sum.revenu?.toString() ?? "0",
         detail: todayRange.start.toISOString().slice(0, 10),
+      };
+    }),
+    getSafeStat(async () => {
+      const aggregate = await prisma.revenueEntry.aggregate({
+        where: {
+          date: {
+            gte: sevenDayRange.start,
+            lt: sevenDayRange.end,
+          },
+        },
+        _sum: { revenu: true },
+      });
+
+      const startLabel = sevenDayRange.start.toISOString().slice(0, 10);
+      const endLabel = new Date(
+        sevenDayRange.end.getTime() - 1,
+      ).toISOString().slice(0, 10);
+
+      return {
+        value: aggregate._sum.revenu?.toString() ?? "0",
+        detail: `${startLabel} to ${endLabel}`,
       };
     }),
     getSafeStat(async () => {
@@ -763,6 +791,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     bestServerToday,
     averagePerEntry,
     entriesCountPerServer,
+    sevenDayTotal,
     sevenDayTotalPerServer,
     sevenDayTotalBreakdown,
     thirtyDayTotalBreakdown,

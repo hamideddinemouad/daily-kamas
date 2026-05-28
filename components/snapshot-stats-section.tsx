@@ -216,6 +216,11 @@ export function SnapshotStatsSection({
           result={snapshot.highestSingleEntry}
           valueDisplay="revenue"
         />
+        <SingleStatCard
+          title="7-Day Total"
+          result={snapshot.sevenDayTotal}
+          valueDisplay="revenue"
+        />
         <ListStatCard
           title="7-Day Total Per Server"
           result={snapshot.sevenDayTotalPerServer}
