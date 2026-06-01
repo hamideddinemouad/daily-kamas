@@ -17,19 +17,14 @@ export function MissingServerEntryRow({
     createRevenueEntry,
     emptyActionState,
   );
-  const [zeroState, zeroFormAction] = useActionState(
-    createRevenueEntry,
-    emptyActionState,
-  );
   const formRef = useRef<HTMLFormElement>(null);
+  const revenuInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (state.success || zeroState.success) {
+    if (state.success) {
       formRef.current?.reset();
     }
-  }, [state.success, zeroState.success]);
-
-  const feedbackState = zeroState.success || zeroState.error ? zeroState : state;
+  }, [state.success]);
 
   return (
     <form
@@ -49,6 +44,7 @@ export function MissingServerEntryRow({
         <label className="space-y-2">
           <span className="text-sm font-medium text-stone-700">Revenu</span>
           <input
+            ref={revenuInputRef}
             name="revenu"
             type="text"
             inputMode="decimal"
@@ -64,10 +60,14 @@ export function MissingServerEntryRow({
           />
 
           <button
-            type="submit"
-            formAction={zeroFormAction}
-            name="revenu"
-            value="0"
+            type="button"
+            onClick={() => {
+              if (revenuInputRef.current) {
+                revenuInputRef.current.value = "0";
+              }
+
+              formRef.current?.requestSubmit();
+            }}
             className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
           >
             Quick 0
@@ -75,15 +75,15 @@ export function MissingServerEntryRow({
         </div>
       </div>
 
-      {feedbackState.error ? (
+      {state.error ? (
         <p className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {feedbackState.error}
+          {state.error}
         </p>
       ) : null}
 
-      {feedbackState.message ? (
+      {state.message ? (
         <p className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {feedbackState.message}
+          {state.message}
         </p>
       ) : null}
     </form>
