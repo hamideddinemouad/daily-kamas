@@ -6,6 +6,7 @@ import { getPrismaClient, isDatabaseConfigured } from "@/lib/prisma";
 import {
   emptyActionState,
   parseEntryInput,
+  parseKamasSoldInput,
   type EntryActionState,
 } from "@/lib/validation";
 
@@ -139,5 +140,140 @@ export async function deleteRevenueEntry(
     ...emptyActionState,
     success: true,
     message: "Revenue entry deleted.",
+  };
+}
+
+export async function createKamasSoldEntry(
+  _prevState: EntryActionState,
+  formData: FormData,
+): Promise<EntryActionState> {
+  const parsed = parseKamasSoldInput(formData);
+
+  if (!parsed.success) {
+    return parsed.state;
+  }
+
+  if (!isDatabaseConfigured()) {
+    return {
+      ...emptyActionState,
+      error: "DATABASE_URL is missing. Add your Neon connection string in .env.",
+    };
+  }
+
+  try {
+    const prisma = getPrismaClient();
+    const entry = await prisma.kamasSoldEntry.create({
+      data: {
+        amount: parsed.data.amount,
+        kamasQuantity: parsed.data.kamasQuantity,
+        pricePerM: parsed.data.pricePerM,
+      },
+    });
+
+    revalidatePath("/sales");
+
+    return {
+      ...emptyActionState,
+      success: true,
+      message: `Sale saved: amount ${formatRevenu(entry.amount.toString())}, quantity ${formatRevenu(entry.kamasQuantity.toString())}, price/M ${formatRevenu(entry.pricePerM.toString())}.`,
+    };
+  } catch (error) {
+    console.error("Failed to create kamas sold entry", error);
+    return {
+      ...emptyActionState,
+      error: "Unable to create the sales entry right now.",
+    };
+  }
+}
+
+export async function updateKamasSoldEntry(
+  _prevState: EntryActionState,
+  formData: FormData,
+): Promise<EntryActionState> {
+  const id = formData.get("id");
+
+  if (typeof id !== "string" || id.trim() === "") {
+    return {
+      ...emptyActionState,
+      error: "Missing sales entry identifier.",
+    };
+  }
+
+  const parsed = parseKamasSoldInput(formData);
+
+  if (!parsed.success) {
+    return parsed.state;
+  }
+
+  if (!isDatabaseConfigured()) {
+    return {
+      ...emptyActionState,
+      error: "DATABASE_URL is missing. Add your Neon connection string in .env.",
+    };
+  }
+
+  try {
+    const prisma = getPrismaClient();
+    await prisma.kamasSoldEntry.update({
+      where: { id },
+      data: {
+        amount: parsed.data.amount,
+        kamasQuantity: parsed.data.kamasQuantity,
+        pricePerM: parsed.data.pricePerM,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to update kamas sold entry", error);
+    return {
+      ...emptyActionState,
+      error: "Unable to update the sales entry right now.",
+    };
+  }
+
+  revalidatePath("/sales");
+
+  return {
+    ...emptyActionState,
+    success: true,
+    message: "Sales entry updated.",
+  };
+}
+
+export async function deleteKamasSoldEntry(
+  id: string,
+): Promise<EntryActionState> {
+  if (!id.trim()) {
+    return {
+      ...emptyActionState,
+      error: "Missing sales entry identifier.",
+    };
+  }
+
+  if (!isDatabaseConfigured()) {
+    return {
+      ...emptyActionState,
+      error: "DATABASE_URL is missing. Add your Neon connection string in .env.",
+    };
+  }
+
+  try {
+    const prisma = getPrismaClient();
+    await prisma.kamasSoldEntry.delete({
+      where: { id },
+    });
+  } catch (error) {
+    console.error("Failed to delete kamas sold entry", error);
+    return {
+      ...emptyActionState,
+      error: "Unable to delete the sales entry right now.",
+    };
+  }
+
+  revalidatePath("/sales");
+
+  return {
+    ...emptyActionState,
+    success: true,
+    message: "Sales entry deleted.",
   };
 }

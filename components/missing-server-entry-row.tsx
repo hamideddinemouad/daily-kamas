@@ -17,13 +17,19 @@ export function MissingServerEntryRow({
     createRevenueEntry,
     emptyActionState,
   );
+  const [zeroState, zeroFormAction] = useActionState(
+    createRevenueEntry,
+    emptyActionState,
+  );
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
-    if (state.success) {
+    if (state.success || zeroState.success) {
       formRef.current?.reset();
     }
-  }, [state.success]);
+  }, [state.success, zeroState.success]);
+
+  const feedbackState = zeroState.success || zeroState.error ? zeroState : state;
 
   return (
     <form
@@ -51,21 +57,33 @@ export function MissingServerEntryRow({
           />
         </label>
 
-        <SubmitButton
-          idleLabel={`Save ${server}`}
-          pendingLabel="Saving..."
-        />
+        <div className="grid gap-2 md:grid-cols-[auto_auto]">
+          <SubmitButton
+            idleLabel={`Save ${server}`}
+            pendingLabel="Saving..."
+          />
+
+          <button
+            type="submit"
+            formAction={zeroFormAction}
+            name="revenu"
+            value="0"
+            className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
+          >
+            Quick 0
+          </button>
+        </div>
       </div>
 
-      {state.error ? (
+      {feedbackState.error ? (
         <p className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {state.error}
+          {feedbackState.error}
         </p>
       ) : null}
 
-      {state.message ? (
+      {feedbackState.message ? (
         <p className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {state.message}
+          {feedbackState.message}
         </p>
       ) : null}
     </form>

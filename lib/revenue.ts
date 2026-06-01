@@ -53,6 +53,7 @@ export type DashboardSnapshot = {
   todayCoverage: StatResult<SingleValueStat>;
   bestServer: StatResult<SingleValueStat>;
   bestServerToday: StatResult<SingleValueStat>;
+  bestDayEver: StatResult<SingleValueStat>;
   averagePerEntry: StatResult<SingleValueStat>;
   entriesCountPerServer: StatResult<MultiValueStat>;
   sevenDayTotal: StatResult<SingleValueStat>;
@@ -77,6 +78,7 @@ function createFailedSnapshot(message: string): DashboardSnapshot {
     todayCoverage: failed(),
     bestServer: failed(),
     bestServerToday: failed(),
+    bestDayEver: failed(),
     averagePerEntry: failed(),
     entriesCountPerServer: failed(),
     sevenDayTotal: failed(),
@@ -192,10 +194,8 @@ function createUtcMonthRange(referenceDate = new Date()) {
   return { start, end };
 }
 
-function getDaysInUtcMonth(referenceDate = new Date()) {
-  return new Date(
-    Date.UTC(referenceDate.getUTCFullYear(), referenceDate.getUTCMonth() + 1, 0),
-  ).getUTCDate();
+function getElapsedUtcDaysInMonth(referenceDate = new Date()) {
+  return referenceDate.getUTCDate();
 }
 
 async function getSafeStat<T>(loader: () => Promise<T>): Promise<StatResult<T>> {
@@ -212,6 +212,58 @@ async function getSafeStat<T>(loader: () => Promise<T>): Promise<StatResult<T>> 
   }
 }
 
+async function getBestDailyTotal(
+  prisma: ReturnType<typeof getPrismaClient>,
+): Promise<SingleValueStat> {
+  const entries = await prisma.revenueEntry.findMany({
+    select: {
+      date: true,
+      revenu: true,
+    },
+    orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+  });
+
+  const totalsByDate = new Map<string, number>();
+
+  for (const entry of entries) {
+    const dayKey = entry.date.toISOString().slice(0, 10);
+    const previousTotal = totalsByDate.get(dayKey) ?? 0;
+
+    totalsByDate.set(
+      dayKey,
+      previousTotal + Number.parseFloat(entry.revenu.toString()),
+    );
+  }
+
+  if (totalsByDate.size === 0) {
+    return {
+      value: "0",
+      detail: "No entries yet",
+    };
+  }
+
+  let selectedDay: { date: string; total: number } | null = null;
+
+  for (const [date, total] of totalsByDate.entries()) {
+    if (!selectedDay || total > selectedDay.total) {
+      selectedDay = { date, total };
+    }
+  }
+
+  if (!selectedDay) {
+    return {
+      value: "0",
+      detail: "No entries yet",
+    };
+  }
+
+  return {
+    value: selectedDay.total.toString(),
+    // This reflects the combined total for all entries recorded on that UTC date.
+    detail: selectedDay.date,
+  };
+}
+
 export async function getDashboardData() {
   if (!isDatabaseConfigured()) {
     return createEmptyDashboardData(false);
@@ -221,7 +273,9 @@ export async function getDashboardData() {
     const prisma = getPrismaClient();
     const monthRange = createUtcMonthRange();
     const todayRange = createUtcDayRange();
-    const daysInMonth = getDaysInUtcMonth();
+    // The dashboard's monthly average is based on days elapsed so far in the
+    // current UTC month, including today.
+    const elapsedDaysInMonth = getElapsedUtcDaysInMonth();
     const [entries, groupedTotals, grandTotalAggregate] = await Promise.all([
       prisma.revenueEntry.findMany({
         orderBy: [{ date: "desc" }, { createdAt: "desc" }],
@@ -301,8 +355,8 @@ export async function getDashboardData() {
       averageByServer,
       activeDaysByServer,
       grandTotal,
-      grandAveragePerDay: calculateAverage(grandTotal, daysInMonth),
-      activeDayCount: daysInMonth,
+      grandAveragePerDay: calculateAverage(grandTotal, elapsedDaysInMonth),
+      activeDayCount: elapsedDaysInMonth,
       missingServersInLast24Hours,
       databaseConfigured: true,
       dashboardDataError: null,
@@ -334,6 +388,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
         ok: true,
         value: { value: "None", detail: "No entries yet today" },
       },
+      bestDayEver: { ok: true, value: { value: "0", detail: "No entries yet" } },
       averagePerEntry: { ok: true, value: { value: "0", detail: "0 entries" } },
       entriesCountPerServer: { ok: true, value: { rows: emptyRows } },
       sevenDayTotal: {
@@ -390,6 +445,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     todayCoverage,
     bestServer,
     bestServerToday,
+    bestDayEver,
     averagePerEntry,
     entriesCountPerServer,
     sevenDayTotalPerServer,
@@ -548,6 +604,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
             detail: "No entries yet today",
           };
     }),
+    getSafeStat(async () => getBestDailyTotal(prisma)),
     getSafeStat(async () => {
       const aggregate = await prisma.revenueEntry.aggregate({
         _avg: { revenu: true },
@@ -789,6 +846,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     todayCoverage,
     bestServer,
     bestServerToday,
+    bestDayEver,
     averagePerEntry,
     entriesCountPerServer,
     sevenDayTotal,

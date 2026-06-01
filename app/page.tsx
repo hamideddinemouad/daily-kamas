@@ -102,8 +102,9 @@ export default async function Home() {
                 {formatRevenu(grandAveragePerDay)}
               </p>
               <p className="mt-2 text-sm leading-6 text-stone-600">
-                Based on {activeDayCount}{" "}
-                {activeDayCount === 1 ? "day" : "days"} in this month.
+                Based on the {activeDayCount}{" "}
+                {activeDayCount === 1 ? "day" : "days"} elapsed so far this
+                month, including today.
               </p>
             </div>
           </div>

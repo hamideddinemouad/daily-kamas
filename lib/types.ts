@@ -8,3 +8,12 @@ export type RevenueEntryView = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type KamasSoldEntryView = {
+  id: string;
+  amount: string;
+  kamasQuantity: string;
+  pricePerM: string;
+  createdAt: string;
+  updatedAt: string;
+};

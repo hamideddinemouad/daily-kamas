@@ -35,3 +35,14 @@ model WishlistItem {
 
   @@index([createdAt])
 }
+
+model KamasSoldEntry {
+  id            String   @id @default(cuid())
+  amount        Decimal  @db.Decimal(18, 4)
+  kamasQuantity Decimal  @db.Decimal(18, 4)
+  pricePerM     Decimal  @db.Decimal(18, 4)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([createdAt])
+}

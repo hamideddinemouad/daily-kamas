@@ -237,6 +237,11 @@ export function SnapshotStatsSection({
           valueDisplay="text"
           detailDisplay="revenue"
         />
+        <SingleStatCard
+          title="Best Day Ever"
+          result={snapshot.bestDayEver}
+          valueDisplay="revenue"
+        />
       </div>
     </section>
   );
