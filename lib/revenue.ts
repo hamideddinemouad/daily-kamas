@@ -58,6 +58,7 @@ export type DashboardSnapshot = {
   entriesCountPerServer: StatResult<MultiValueStat>;
   sevenDayTotal: StatResult<SingleValueStat>;
   sevenDayDailyTotalsAllServers: StatResult<MultiValueStat>;
+  thirtyDayDailyTotalsAllServers: StatResult<MultiValueStat>;
   sevenDayTotalPerServer: StatResult<MultiValueStat>;
   sevenDayTotalBreakdown: StatResult<GroupedMultiValueStat>;
   thirtyDayTotalBreakdown: StatResult<GroupedMultiValueStat>;
@@ -84,6 +85,7 @@ function createFailedSnapshot(message: string): DashboardSnapshot {
     entriesCountPerServer: failed(),
     sevenDayTotal: failed(),
     sevenDayDailyTotalsAllServers: failed(),
+    thirtyDayDailyTotalsAllServers: failed(),
     sevenDayTotalPerServer: failed(),
     sevenDayTotalBreakdown: failed(),
     thirtyDayTotalBreakdown: failed(),
@@ -406,6 +408,15 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
           })),
         },
       },
+      thirtyDayDailyTotalsAllServers: {
+        ok: true,
+        value: {
+          rows: createRecentUtcDateKeys(30).map((date) => ({
+            label: date,
+            value: "0",
+          })),
+        },
+      },
       sevenDayTotalPerServer: { ok: true, value: { rows: emptyRows } },
       sevenDayTotalBreakdown: {
         ok: true,
@@ -461,6 +472,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     entriesCountPerServer,
     sevenDayTotalPerServer,
     sevenDayDailyTotalsAllServers,
+    thirtyDayDailyTotalsAllServers,
     sevenDayTotalBreakdown,
     thirtyDayTotalBreakdown,
     sevenDayAveragePerDay,
@@ -713,6 +725,39 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
       const entries = await prisma.revenueEntry.findMany({
         where: {
           date: {
+            gte: thirtyDayRange.start,
+            lt: thirtyDayRange.end,
+          },
+        },
+        select: {
+          date: true,
+          revenu: true,
+        },
+      });
+
+      const totalsByDate = new Map<string, number>();
+
+      for (const entry of entries) {
+        const dayKey = entry.date.toISOString().slice(0, 10);
+        const previousValue = totalsByDate.get(dayKey) ?? 0;
+
+        totalsByDate.set(
+          dayKey,
+          previousValue + Number.parseFloat(entry.revenu.toString()),
+        );
+      }
+
+      return {
+        rows: thirtyDayDateKeys.map((date) => ({
+          label: date,
+          value: (totalsByDate.get(date) ?? 0).toString(),
+        })),
+      };
+    }),
+    getSafeStat(async () => {
+      const entries = await prisma.revenueEntry.findMany({
+        where: {
+          date: {
             gte: sevenDayRange.start,
             lt: sevenDayRange.end,
           },
@@ -896,6 +941,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     entriesCountPerServer,
     sevenDayTotal,
     sevenDayDailyTotalsAllServers,
+    thirtyDayDailyTotalsAllServers,
     sevenDayTotalPerServer,
     sevenDayTotalBreakdown,
     thirtyDayTotalBreakdown,

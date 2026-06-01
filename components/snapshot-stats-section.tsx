@@ -57,7 +57,7 @@ function SingleStatCard({
   );
 }
 
-function ListStatCard({
+export function ListStatCard({
   title,
   result,
   valueDisplay,
