@@ -57,6 +57,7 @@ export type DashboardSnapshot = {
   averagePerEntry: StatResult<SingleValueStat>;
   entriesCountPerServer: StatResult<MultiValueStat>;
   sevenDayTotal: StatResult<SingleValueStat>;
+  sevenDayDailyTotalsAllServers: StatResult<MultiValueStat>;
   sevenDayTotalPerServer: StatResult<MultiValueStat>;
   sevenDayTotalBreakdown: StatResult<GroupedMultiValueStat>;
   thirtyDayTotalBreakdown: StatResult<GroupedMultiValueStat>;
@@ -82,6 +83,7 @@ function createFailedSnapshot(message: string): DashboardSnapshot {
     averagePerEntry: failed(),
     entriesCountPerServer: failed(),
     sevenDayTotal: failed(),
+    sevenDayDailyTotalsAllServers: failed(),
     sevenDayTotalPerServer: failed(),
     sevenDayTotalBreakdown: failed(),
     thirtyDayTotalBreakdown: failed(),
@@ -395,6 +397,15 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
         ok: true,
         value: { value: "0", detail: "No database yet" },
       },
+      sevenDayDailyTotalsAllServers: {
+        ok: true,
+        value: {
+          rows: createRecentUtcDateKeys(7).map((date) => ({
+            label: date,
+            value: "0",
+          })),
+        },
+      },
       sevenDayTotalPerServer: { ok: true, value: { rows: emptyRows } },
       sevenDayTotalBreakdown: {
         ok: true,
@@ -449,6 +460,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     averagePerEntry,
     entriesCountPerServer,
     sevenDayTotalPerServer,
+    sevenDayDailyTotalsAllServers,
     sevenDayTotalBreakdown,
     thirtyDayTotalBreakdown,
     sevenDayAveragePerDay,
@@ -673,6 +685,39 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
           },
         },
         select: {
+          date: true,
+          revenu: true,
+        },
+      });
+
+      const totalsByDate = new Map<string, number>();
+
+      for (const entry of entries) {
+        const dayKey = entry.date.toISOString().slice(0, 10);
+        const previousValue = totalsByDate.get(dayKey) ?? 0;
+
+        totalsByDate.set(
+          dayKey,
+          previousValue + Number.parseFloat(entry.revenu.toString()),
+        );
+      }
+
+      return {
+        rows: recentDateKeys.map((date) => ({
+          label: date,
+          value: (totalsByDate.get(date) ?? 0).toString(),
+        })),
+      };
+    }),
+    getSafeStat(async () => {
+      const entries = await prisma.revenueEntry.findMany({
+        where: {
+          date: {
+            gte: sevenDayRange.start,
+            lt: sevenDayRange.end,
+          },
+        },
+        select: {
           server: true,
           date: true,
           revenu: true,
@@ -850,6 +895,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     averagePerEntry,
     entriesCountPerServer,
     sevenDayTotal,
+    sevenDayDailyTotalsAllServers,
     sevenDayTotalPerServer,
     sevenDayTotalBreakdown,
     thirtyDayTotalBreakdown,

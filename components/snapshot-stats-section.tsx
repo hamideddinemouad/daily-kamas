@@ -200,25 +200,19 @@ export function SnapshotStatsSection({
           valueDisplay="revenue"
         />
         <SingleStatCard
-          title="Best Server"
-          result={snapshot.bestServer}
-          valueDisplay="text"
-          detailDisplay="revenue"
-        />
-        <SingleStatCard
           title="Best Server Today"
           result={snapshot.bestServerToday}
           valueDisplay="text"
           detailDisplay="revenue"
         />
         <SingleStatCard
-          title="Highest Single Entry"
-          result={snapshot.highestSingleEntry}
-          valueDisplay="revenue"
-        />
-        <SingleStatCard
           title="7-Day Total"
           result={snapshot.sevenDayTotal}
+          valueDisplay="revenue"
+        />
+        <ListStatCard
+          title="7-Day Daily Totals"
+          result={snapshot.sevenDayDailyTotalsAllServers}
           valueDisplay="revenue"
         />
         <ListStatCard
@@ -240,6 +234,17 @@ export function SnapshotStatsSection({
         <SingleStatCard
           title="Best Day Ever"
           result={snapshot.bestDayEver}
+          valueDisplay="revenue"
+        />
+        <SingleStatCard
+          title="Best Server Ever"
+          result={snapshot.bestServer}
+          valueDisplay="text"
+          detailDisplay="revenue"
+        />
+        <SingleStatCard
+          title="Highest Single Entry"
+          result={snapshot.highestSingleEntry}
           valueDisplay="revenue"
         />
       </div>
