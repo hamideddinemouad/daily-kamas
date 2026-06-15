@@ -16,7 +16,10 @@ type DashboardData = {
   grandTotal: string;
   grandAveragePerDay: string;
   activeDayCount: number;
-  missingServersInLast24Hours: ServerOption[];
+  serverEntryStatusToday: {
+    server: ServerOption;
+    hasEntryToday: boolean;
+  }[];
   databaseConfigured: boolean;
   dashboardDataError: string | null;
 };
@@ -68,6 +71,37 @@ export type DashboardSnapshot = {
   shareOfTotal: StatResult<MultiValueStat>;
 };
 
+export type ServerBreakdownRows = {
+  rows: SummaryStat[];
+};
+
+export const SNAPSHOT_STAT_KEYS = [
+  "todayTotal",
+  "todayTotalPerServer",
+  "bestServerToday",
+  "sevenDayTotal",
+  "sevenDayDailyTotalsAllServers",
+  "sevenDayTotalPerServer",
+  "sevenDayAveragePerDay",
+  "allTimeAveragePerDay",
+  "shareOfTotal",
+  "bestDayEver",
+  "bestServer",
+  "highestSingleEntry",
+] as const;
+
+export type SnapshotStatKey = (typeof SNAPSHOT_STAT_KEYS)[number];
+
+export type SnapshotStatResponse =
+  | {
+      kind: "single";
+      result: StatResult<SingleValueStat>;
+    }
+  | {
+      kind: "list";
+      result: StatResult<MultiValueStat>;
+    };
+
 function createFailedSnapshot(message: string): DashboardSnapshot {
   const failed = <T,>(): StatResult<T> => ({
     ok: false,
@@ -116,6 +150,13 @@ function createEmptyStringRecord() {
   );
 }
 
+function createEmptySummaryRows() {
+  return SERVER_OPTIONS.map((server) => ({
+    label: server,
+    value: "0",
+  }));
+}
+
 function createEmptyNumberRecord() {
   return SERVER_OPTIONS.reduce<Record<ServerOption, number>>(
     (accumulator, server) => {
@@ -138,7 +179,10 @@ function createEmptyDashboardData(
     grandTotal: "0",
     grandAveragePerDay: "0",
     activeDayCount: 0,
-    missingServersInLast24Hours: [],
+    serverEntryStatusToday: SERVER_OPTIONS.map((server) => ({
+      server,
+      hasEntryToday: false,
+    })),
     databaseConfigured,
     dashboardDataError,
   };
@@ -171,6 +215,483 @@ function createRecentUtcDateKeys(days: number) {
     date.setUTCDate(date.getUTCDate() - index);
     return date.toISOString().slice(0, 10);
   });
+}
+
+export async function getSevenDayBreakdownForServer(
+  server: ServerOption,
+): Promise<ServerBreakdownRows> {
+  if (!isDatabaseConfigured()) {
+    return {
+      rows: createRecentUtcDateKeys(7).map((date) => ({
+        label: date,
+        value: "0",
+      })),
+    };
+  }
+
+  const prisma = getPrismaClient();
+  const sevenDayRange = createUtcRollingRange(7);
+  const recentDateKeys = createRecentUtcDateKeys(7);
+  const entries = await prisma.revenueEntry.findMany({
+    where: {
+      server,
+      date: {
+        gte: sevenDayRange.start,
+        lt: sevenDayRange.end,
+      },
+    },
+    select: {
+      date: true,
+      revenu: true,
+    },
+  });
+
+  const totalsByDate = new Map<string, number>();
+
+  for (const entry of entries) {
+    const dayKey = entry.date.toISOString().slice(0, 10);
+    const previousValue = totalsByDate.get(dayKey) ?? 0;
+
+    totalsByDate.set(
+      dayKey,
+      previousValue + Number.parseFloat(entry.revenu.toString()),
+    );
+  }
+
+  return {
+    rows: recentDateKeys.map((date) => ({
+      label: date,
+      value: (totalsByDate.get(date) ?? 0).toString(),
+    })),
+  };
+}
+
+export async function getSnapshotStatData(
+  key: SnapshotStatKey,
+): Promise<SnapshotStatResponse> {
+  if (!isDatabaseConfigured()) {
+    const emptyRows = createEmptySummaryRows();
+
+    switch (key) {
+      case "todayTotal":
+        return {
+          kind: "single",
+          result: { ok: true, value: { value: "0", detail: "No database yet" } },
+        };
+      case "todayTotalPerServer":
+        return { kind: "list", result: { ok: true, value: { rows: emptyRows } } };
+      case "bestServerToday":
+        return {
+          kind: "single",
+          result: {
+            ok: true,
+            value: { value: "None", detail: "No entries yet today" },
+          },
+        };
+      case "sevenDayTotal":
+        return {
+          kind: "single",
+          result: { ok: true, value: { value: "0", detail: "No database yet" } },
+        };
+      case "sevenDayDailyTotalsAllServers":
+        return {
+          kind: "list",
+          result: {
+            ok: true,
+            value: {
+              rows: createRecentUtcDateKeys(7).map((date) => ({
+                label: date,
+                value: "0",
+              })),
+            },
+          },
+        };
+      case "sevenDayTotalPerServer":
+        return { kind: "list", result: { ok: true, value: { rows: emptyRows } } };
+      case "sevenDayAveragePerDay":
+        return { kind: "list", result: { ok: true, value: { rows: emptyRows } } };
+      case "allTimeAveragePerDay":
+        return {
+          kind: "single",
+          result: { ok: true, value: { value: "0", detail: "No database yet" } },
+        };
+      case "shareOfTotal":
+        return { kind: "list", result: { ok: true, value: { rows: emptyRows } } };
+      case "bestDayEver":
+        return {
+          kind: "single",
+          result: { ok: true, value: { value: "0", detail: "No entries yet" } },
+        };
+      case "bestServer":
+        return {
+          kind: "single",
+          result: {
+            ok: true,
+            value: { value: "None", detail: "No entries yet" },
+          },
+        };
+      case "highestSingleEntry":
+        return {
+          kind: "single",
+          result: { ok: true, value: { value: "0", detail: "No entries yet" } },
+        };
+    }
+  }
+
+  let prisma: ReturnType<typeof getPrismaClient>;
+
+  try {
+    prisma = getPrismaClient();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+
+    return key === "todayTotalPerServer" ||
+      key === "sevenDayDailyTotalsAllServers" ||
+      key === "sevenDayTotalPerServer" ||
+      key === "sevenDayAveragePerDay" ||
+      key === "shareOfTotal"
+      ? { kind: "list", result: { ok: false, message } }
+      : { kind: "single", result: { ok: false, message } };
+  }
+
+  const todayRange = createUtcDayRange();
+  const sevenDayRange = createUtcRollingRange(7);
+  const recentDateKeys = createRecentUtcDateKeys(7);
+
+  switch (key) {
+    case "todayTotal":
+      return {
+        kind: "single",
+        result: await getSafeStat(async () => {
+          const aggregate = await prisma.revenueEntry.aggregate({
+            where: {
+              date: {
+                gte: todayRange.start,
+                lt: todayRange.end,
+              },
+            },
+            _sum: { revenu: true },
+          });
+
+          return {
+            value: aggregate._sum.revenu?.toString() ?? "0",
+            detail: todayRange.start.toISOString().slice(0, 10),
+          };
+        }),
+      };
+    case "todayTotalPerServer":
+      return {
+        kind: "list",
+        result: await getSafeStat(async () => {
+          const grouped = await prisma.revenueEntry.groupBy({
+            by: ["server"],
+            where: {
+              date: {
+                gte: todayRange.start,
+                lt: todayRange.end,
+              },
+            },
+            _sum: { revenu: true },
+          });
+          const totals = createEmptyStringRecord();
+
+          for (const item of grouped) {
+            totals[item.server] = item._sum.revenu?.toString() ?? "0";
+          }
+
+          return {
+            rows: SERVER_OPTIONS.map((server) => ({
+              label: server,
+              value: totals[server],
+            })),
+          };
+        }),
+      };
+    case "bestServerToday":
+      return {
+        kind: "single",
+        result: await getSafeStat(async () => {
+          const grouped = await prisma.revenueEntry.groupBy({
+            by: ["server"],
+            where: {
+              date: {
+                gte: todayRange.start,
+                lt: todayRange.end,
+              },
+            },
+            _sum: { revenu: true },
+          });
+          const best = grouped.reduce<(typeof grouped)[number] | null>(
+            (currentBest, item) => {
+              if (!currentBest) {
+                return item;
+              }
+
+              const currentValue = Number.parseFloat(
+                currentBest._sum.revenu?.toString() ?? "0",
+              );
+              const nextValue = Number.parseFloat(
+                item._sum.revenu?.toString() ?? "0",
+              );
+
+              return nextValue > currentValue ? item : currentBest;
+            },
+            null,
+          );
+
+          return best
+            ? {
+                value: best.server,
+                detail: best._sum.revenu?.toString() ?? "0",
+              }
+            : {
+                value: "None",
+                detail: "No entries yet today",
+              };
+        }),
+      };
+    case "sevenDayTotal":
+      return {
+        kind: "single",
+        result: await getSafeStat(async () => {
+          const aggregate = await prisma.revenueEntry.aggregate({
+            where: {
+              date: {
+                gte: sevenDayRange.start,
+                lt: sevenDayRange.end,
+              },
+            },
+            _sum: { revenu: true },
+          });
+
+          const startLabel = sevenDayRange.start.toISOString().slice(0, 10);
+          const endLabel = new Date(
+            sevenDayRange.end.getTime() - 1,
+          ).toISOString().slice(0, 10);
+
+          return {
+            value: aggregate._sum.revenu?.toString() ?? "0",
+            detail: `${startLabel} to ${endLabel}`,
+          };
+        }),
+      };
+    case "sevenDayDailyTotalsAllServers":
+      return {
+        kind: "list",
+        result: await getSafeStat(async () => {
+          const entries = await prisma.revenueEntry.findMany({
+            where: {
+              date: {
+                gte: sevenDayRange.start,
+                lt: sevenDayRange.end,
+              },
+            },
+            select: {
+              date: true,
+              revenu: true,
+            },
+          });
+
+          const totalsByDate = new Map<string, number>();
+
+          for (const entry of entries) {
+            const dayKey = entry.date.toISOString().slice(0, 10);
+            const previousValue = totalsByDate.get(dayKey) ?? 0;
+
+            totalsByDate.set(
+              dayKey,
+              previousValue + Number.parseFloat(entry.revenu.toString()),
+            );
+          }
+
+          return {
+            rows: recentDateKeys.map((date) => ({
+              label: date,
+              value: (totalsByDate.get(date) ?? 0).toString(),
+            })),
+          };
+        }),
+      };
+    case "sevenDayTotalPerServer":
+      return {
+        kind: "list",
+        result: await getSafeStat(async () => {
+          const grouped = await prisma.revenueEntry.groupBy({
+            by: ["server"],
+            where: {
+              date: {
+                gte: sevenDayRange.start,
+                lt: sevenDayRange.end,
+              },
+            },
+            _sum: { revenu: true },
+          });
+          const totals = createEmptyStringRecord();
+
+          for (const item of grouped) {
+            totals[item.server] = item._sum.revenu?.toString() ?? "0";
+          }
+
+          return {
+            rows: SERVER_OPTIONS.map((server) => ({
+              label: server,
+              value: totals[server],
+            })),
+          };
+        }),
+      };
+    case "sevenDayAveragePerDay":
+      return {
+        kind: "list",
+        result: await getSafeStat(async () => {
+          const grouped = await prisma.revenueEntry.groupBy({
+            by: ["server"],
+            where: {
+              date: {
+                gte: sevenDayRange.start,
+                lt: sevenDayRange.end,
+              },
+            },
+            _sum: { revenu: true },
+          });
+          const totals = createEmptyStringRecord();
+
+          for (const item of grouped) {
+            totals[item.server] = item._sum.revenu?.toString() ?? "0";
+          }
+
+          return {
+            rows: SERVER_OPTIONS.map((server) => ({
+              label: server,
+              value: calculateAverage(totals[server], 7),
+            })),
+          };
+        }),
+      };
+    case "allTimeAveragePerDay":
+      return {
+        kind: "single",
+        result: await getSafeStat(async () => {
+          const [aggregate, activeDates] = await Promise.all([
+            prisma.revenueEntry.aggregate({
+              _sum: { revenu: true },
+            }),
+            prisma.revenueEntry.groupBy({
+              by: ["date"],
+            }),
+          ]);
+
+          const activeDayCount = activeDates.length;
+          const total = aggregate._sum.revenu?.toString() ?? "0";
+
+          return {
+            value: calculateAverage(total, activeDayCount),
+            detail: `${activeDayCount} active ${activeDayCount === 1 ? "day" : "days"}`,
+          };
+        }),
+      };
+    case "shareOfTotal":
+      return {
+        kind: "list",
+        result: await getSafeStat(async () => {
+          const [grouped, aggregate] = await Promise.all([
+            prisma.revenueEntry.groupBy({
+              by: ["server"],
+              _sum: { revenu: true },
+            }),
+            prisma.revenueEntry.aggregate({
+              _sum: { revenu: true },
+            }),
+          ]);
+
+          const totals = createEmptyStringRecord();
+          const grandTotal = Number.parseFloat(
+            aggregate._sum.revenu?.toString() ?? "0",
+          );
+
+          for (const item of grouped) {
+            totals[item.server] = item._sum.revenu?.toString() ?? "0";
+          }
+
+          return {
+            rows: SERVER_OPTIONS.map((server) => {
+              const serverTotal = Number.parseFloat(totals[server]);
+              const share =
+                grandTotal > 0
+                  ? ((serverTotal / grandTotal) * 100).toFixed(1)
+                  : "0.0";
+
+              return {
+                label: server,
+                value: `${share}%`,
+                detail: totals[server],
+              };
+            }),
+          };
+        }),
+      };
+    case "bestDayEver":
+      return {
+        kind: "single",
+        result: await getSafeStat(async () => getBestDailyTotal(prisma)),
+      };
+    case "bestServer":
+      return {
+        kind: "single",
+        result: await getSafeStat(async () => {
+          const grouped = await prisma.revenueEntry.groupBy({
+            by: ["server"],
+            _sum: { revenu: true },
+          });
+          const best = grouped.reduce<(typeof grouped)[number] | null>(
+            (currentBest, item) => {
+              if (!currentBest) {
+                return item;
+              }
+
+              const currentValue = Number.parseFloat(
+                currentBest._sum.revenu?.toString() ?? "0",
+              );
+              const nextValue = Number.parseFloat(
+                item._sum.revenu?.toString() ?? "0",
+              );
+
+              return nextValue > currentValue ? item : currentBest;
+            },
+            null,
+          );
+
+          return best
+            ? {
+                value: best.server,
+                detail: best._sum.revenu?.toString() ?? "0",
+              }
+            : {
+                value: "None",
+                detail: "No entries yet",
+              };
+        }),
+      };
+    case "highestSingleEntry":
+      return {
+        kind: "single",
+        result: await getSafeStat(async () => {
+          const entry = await prisma.revenueEntry.findFirst({
+            orderBy: [{ revenu: "desc" }, { createdAt: "desc" }],
+          });
+
+          return entry
+            ? {
+                value: entry.revenu.toString(),
+                detail: `${entry.server} · ${entry.date.toISOString().slice(0, 10)}`,
+              }
+            : {
+                value: "0",
+                detail: "No entries yet",
+              };
+        }),
+      };
+  }
 }
 
 function createEmptyGroupedPeriodBreakdown(days: number): GroupedMultiValueStat {
@@ -342,9 +863,10 @@ export async function getDashboardData() {
         )
         .map((entry) => entry.server),
     );
-    const missingServersInLast24Hours = SERVER_OPTIONS.filter(
-      (server) => !serversWithEntryToday.has(server),
-    );
+    const serverEntryStatusToday = SERVER_OPTIONS.map((server) => ({
+      server,
+      hasEntryToday: serversWithEntryToday.has(server),
+    }));
 
     return {
       entries: entries.map((entry) => ({
@@ -361,7 +883,7 @@ export async function getDashboardData() {
       grandTotal,
       grandAveragePerDay: calculateAverage(grandTotal, elapsedDaysInMonth),
       activeDayCount: elapsedDaysInMonth,
-      missingServersInLast24Hours,
+      serverEntryStatusToday,
       databaseConfigured: true,
       dashboardDataError: null,
     };

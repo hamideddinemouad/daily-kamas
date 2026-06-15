@@ -10,3 +10,5 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - For new schema changes in development, use `npm run db:migrate`, then `npx prisma generate`.
 - For applying committed migrations to an existing remote/shared database, use `npx prisma migrate deploy`, then `npx prisma generate`.
 - Avoid `prisma migrate reset` unless you intentionally want to wipe data.
+
+always in changelog add what changed

@@ -25,10 +25,10 @@ export function KamasSoldEntryRow({ entry }: KamasSoldEntryRowProps) {
   if (isEditing) {
     return (
       <tr className="rounded-3xl bg-amber-50/80 align-top shadow-sm">
-        <td colSpan={5} className="rounded-3xl border border-amber-200 px-4 py-4">
+        <td colSpan={4} className="rounded-3xl border border-amber-200 px-4 py-4">
           <form action={updateAction} className="space-y-4">
             <input type="hidden" name="id" value={entry.id} />
-            <div className="grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto_auto] md:items-end">
+            <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto_auto] md:items-end">
               <label className="space-y-2">
                 <span className="text-sm font-medium text-stone-700">Amount</span>
                 <input
@@ -49,19 +49,6 @@ export function KamasSoldEntryRow({ entry }: KamasSoldEntryRowProps) {
                   type="text"
                   inputMode="decimal"
                   defaultValue={entry.kamasQuantity}
-                  className="min-h-11 w-full rounded-2xl border border-amber-200 bg-white px-4 outline-none transition focus:border-amber-500"
-                />
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-sm font-medium text-stone-700">
-                  Price Per M
-                </span>
-                <input
-                  name="pricePerM"
-                  type="text"
-                  inputMode="decimal"
-                  defaultValue={entry.pricePerM}
                   className="min-h-11 w-full rounded-2xl border border-amber-200 bg-white px-4 outline-none transition focus:border-amber-500"
                 />
               </label>
@@ -101,9 +88,6 @@ export function KamasSoldEntryRow({ entry }: KamasSoldEntryRowProps) {
       </td>
       <td className="border-y border-stone-200 bg-stone-50 px-4 py-4 font-mono text-stone-950">
         {formatRevenu(entry.kamasQuantity)}
-      </td>
-      <td className="border-y border-stone-200 bg-stone-50 px-4 py-4 font-mono text-stone-950">
-        {formatRevenu(entry.pricePerM)}
       </td>
       <td className="border-y border-stone-200 bg-stone-50 px-4 py-4 text-stone-700">
         {formatCreatedAt(entry.createdAt)}

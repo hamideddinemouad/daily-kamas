@@ -2,7 +2,10 @@ import { MissingServerEntryRow } from "@/components/missing-server-entry-row";
 import type { ServerOption } from "@/lib/constants";
 
 type MissingServerEntryListProps = {
-  servers: ServerOption[];
+  servers: {
+    server: ServerOption;
+    hasEntryToday: boolean;
+  }[];
 };
 
 export function MissingServerEntryList({
@@ -16,17 +19,21 @@ export function MissingServerEntryList({
     <div className="space-y-4">
       <div>
         <h3 className="text-lg font-semibold text-stone-950">
-          Missing Entries For Today
+          Server Entries For Today
         </h3>
         <p className="mt-1 text-sm text-stone-600">
-          Fill these servers in order first. Once every server has an entry for
-          today, the normal dropdown form will come back.
+          Every server stays visible here. A green dot means that server already
+          has at least one revenue entry saved for today.
         </p>
       </div>
 
       <div className="space-y-3">
-        {servers.map((server) => (
-          <MissingServerEntryRow key={server} server={server} />
+        {servers.map(({ server, hasEntryToday }) => (
+          <MissingServerEntryRow
+            key={server}
+            server={server}
+            hasEntryToday={hasEntryToday}
+          />
         ))}
       </div>
     </div>

@@ -1,5 +1,4 @@
 import { AppShell } from "@/components/app-shell";
-import { CreateEntryForm } from "@/components/create-entry-form";
 import { MissingServerEntryList } from "@/components/missing-server-entry-list";
 import { formatRevenu } from "@/lib/formatters";
 import { getDashboardData } from "@/lib/revenue";
@@ -28,7 +27,7 @@ export default async function Home() {
     grandTotal,
     grandAveragePerDay,
     activeDayCount,
-    missingServersInLast24Hours,
+    serverEntryStatusToday,
     databaseConfigured,
     dashboardDataError,
   } = dashboardData;
@@ -51,18 +50,15 @@ export default async function Home() {
           <div className="mb-6">
             <div>
               <h2 className="text-xl font-semibold text-stone-950">
-                Add Revenue Entry
+                Revenue Entry Checklist
               </h2>
               <p className="mt-1 text-sm text-stone-600">
-                The date is stored automatically when the entry is created.
+                The date is stored automatically when the entry is created, and
+                today&apos;s completed servers are marked with a green dot.
               </p>
             </div>
           </div>
-          {missingServersInLast24Hours.length > 0 ? (
-            <MissingServerEntryList servers={missingServersInLast24Hours} />
-          ) : (
-            <CreateEntryForm />
-          )}
+          <MissingServerEntryList servers={serverEntryStatusToday} />
           {!databaseConfigured ? (
             <div className="mt-6 rounded-3xl border border-amber-300 bg-amber-100/80 px-5 py-4 text-sm text-amber-950">
               Add your Neon `DATABASE_URL` in `.env` to enable live data. The

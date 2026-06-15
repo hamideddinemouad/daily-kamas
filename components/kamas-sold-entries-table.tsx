@@ -26,7 +26,6 @@ export function KamasSoldEntriesTable({
           <tr className="text-left text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
             <th className="px-4 py-2">Amount</th>
             <th className="px-4 py-2">Kamas Quantity</th>
-            <th className="px-4 py-2">Price Per M</th>
             <th className="px-4 py-2">Created</th>
             <th className="px-4 py-2 text-right">Actions</th>
           </tr>

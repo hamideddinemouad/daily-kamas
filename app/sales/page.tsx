@@ -13,7 +13,7 @@ export default async function SalesPage() {
     <AppShell
       eyebrow="Sales"
       title="Kamas Sold"
-      description="Create, edit, and delete kamas sold records in one place, including amount, quantity, and price per M."
+      description="Create, edit, and delete kamas sold records in one place using only amount and kamas quantity."
     >
       {salesDataError ? (
         <section className="rounded-[2rem] border border-rose-200 bg-rose-50/90 px-5 py-4 text-sm text-rose-900">
@@ -28,7 +28,7 @@ export default async function SalesPage() {
               Add Sales Entry
             </h2>
             <p className="mt-1 text-sm text-stone-600">
-              Record the amount, kamas quantity, and price per M for each sale.
+              Record the amount and kamas quantity for each sale.
             </p>
           </div>
 

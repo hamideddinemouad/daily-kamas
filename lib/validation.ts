@@ -16,7 +16,6 @@ export type KamasSoldInputResult =
       data: {
         amount: string;
         kamasQuantity: string;
-        pricePerM: string;
       };
     }
   | { success: false; state: EntryActionState };
@@ -182,24 +181,11 @@ export function parseKamasSoldInput(formData: FormData): KamasSoldInputResult {
     };
   }
 
-  const pricePerMResult = parseRequiredDecimalField(
-    formData.get("pricePerM"),
-    "Price per M",
-  );
-
-  if (!pricePerMResult.ok) {
-    return {
-      success: false,
-      state: pricePerMResult.state,
-    };
-  }
-
   return {
     success: true,
     data: {
       amount: amountResult.value,
       kamasQuantity: quantityResult.value,
-      pricePerM: pricePerMResult.value,
     },
   };
 }

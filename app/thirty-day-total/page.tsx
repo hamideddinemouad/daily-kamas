@@ -20,12 +20,14 @@ export default async function ThirtyDayTotalPage() {
         title="30-Day Daily Totals"
         result={snapshot.thirtyDayDailyTotalsAllServers}
         valueDisplay="revenue"
+        paginate
       />
       <PeriodTotalSection
         title="30-Day Total"
         description="Daily revenue totals for each server across the last 30 days. Missing days stay visible with a zero value."
         badgeLabel="30 days"
         result={snapshot.thirtyDayTotalBreakdown}
+        paginate
       />
     </AppShell>
   );

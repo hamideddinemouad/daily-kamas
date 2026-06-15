@@ -34,7 +34,6 @@ export async function getSalesData(): Promise<SalesData> {
         id: entry.id,
         amount: entry.amount.toString(),
         kamasQuantity: entry.kamasQuantity.toString(),
-        pricePerM: entry.pricePerM.toString(),
         createdAt: entry.createdAt.toISOString(),
         updatedAt: entry.updatedAt.toISOString(),
       })),

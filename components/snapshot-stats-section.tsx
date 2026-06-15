@@ -1,13 +1,19 @@
+"use client";
+
+import { useState } from "react";
 import { formatCreatedAt, formatDate, formatRevenu } from "@/lib/formatters";
 import {
-  type DashboardSnapshot,
   type GroupedMultiValueStat,
   type MultiValueStat,
+  SNAPSHOT_STAT_KEYS,
   type SingleValueStat,
+  type SnapshotStatKey,
+  type SnapshotStatResponse,
   type StatResult,
 } from "@/lib/revenue";
 
 type ValueDisplay = "revenue" | "text" | "datetime";
+const PAGE_SIZE = 10;
 
 function formatStatValue(value: string, display: ValueDisplay) {
   if (display === "revenue") {
@@ -62,20 +68,30 @@ export function ListStatCard({
   result,
   valueDisplay,
   detailDisplay = "text",
+  paginate = false,
 }: {
   title: string;
   result: StatResult<MultiValueStat>;
   valueDisplay: ValueDisplay;
   detailDisplay?: ValueDisplay;
+  paginate?: boolean;
 }) {
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
   return (
     <article className="rounded-[1.75rem] border border-stone-200 bg-stone-50/90 p-5 shadow-[0_16px_50px_-38px_rgba(68,46,20,0.55)]">
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
         {title}
       </p>
-      {result.ok ? (
+      {result.ok ? (() => {
+        const visibleRows = paginate
+          ? result.value.rows.slice(0, visibleCount)
+          : result.value.rows;
+        const hasMoreRows = paginate && visibleCount < result.value.rows.length;
+
+        return (
         <div className="mt-4 space-y-3">
-          {result.value.rows.map((row) => (
+          {visibleRows.map((row) => (
             <div
               key={row.label}
               className="flex items-start justify-between gap-4 border-b border-stone-200 pb-3 last:border-b-0 last:pb-0"
@@ -93,8 +109,25 @@ export function ListStatCard({
               </p>
             </div>
           ))}
+          {hasMoreRows ? (
+            <div className="flex items-center justify-between gap-4 rounded-2xl border border-stone-200 bg-white/80 px-4 py-3">
+              <p className="text-sm text-stone-600">
+                Showing {visibleRows.length} of {result.value.rows.length} rows.
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  setVisibleCount((currentCount) => currentCount + PAGE_SIZE)
+                }
+                className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
+              >
+                Show 10 more
+              </button>
+            </div>
+          ) : null}
         </div>
-      ) : (
+        );
+      })() : (
         <p className="mt-3 text-sm text-rose-700">
           Unavailable right now: {result.message}
         </p>
@@ -108,12 +141,16 @@ export function PeriodTotalSection({
   description,
   badgeLabel,
   result,
+  paginate = false,
 }: {
   title: string;
   description: string;
   badgeLabel: string;
   result: StatResult<GroupedMultiValueStat>;
+  paginate?: boolean;
 }) {
+  const [visibleCounts, setVisibleCounts] = useState<Record<string, number>>({});
+
   return (
     <section className="mt-6 rounded-[1.9rem] border border-stone-200 bg-stone-50/80 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_18px_45px_-36px_rgba(68,46,20,0.45)] sm:p-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -128,41 +165,69 @@ export function PeriodTotalSection({
 
       {result.ok ? (
         <div className="mt-5 grid gap-4 xl:grid-cols-2">
-          {result.value.groups.map((group) => (
-            <article
-              key={group.label}
-              className="rounded-[1.5rem] border border-stone-200 bg-white/95 p-4 shadow-[0_16px_36px_-30px_rgba(68,46,20,0.35)]"
-            >
-              <div className="flex items-center justify-between gap-3 border-b border-stone-200 pb-3">
-                <h4 className="text-base font-semibold capitalize text-stone-950">
-                  {group.label}
-                </h4>
-                <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-800">
-                  {badgeLabel}
-                </span>
-              </div>
+          {result.value.groups.map((group) => {
+            const visibleCount = paginate
+              ? (visibleCounts[group.label] ?? PAGE_SIZE)
+              : group.rows.length;
+            const visibleRows = group.rows.slice(0, visibleCount);
+            const hasMoreRows = paginate && visibleCount < group.rows.length;
 
-              <div className="mt-3 space-y-2">
-                {group.rows.map((row, index) => (
-                  <div
-                    key={`${group.label}-${row.label}`}
-                    className={`flex items-center justify-between gap-4 rounded-2xl px-3 py-2 transition-colors duration-200 ${
-                      index === 0
-                        ? "bg-amber-50/90"
-                        : "bg-stone-50/75 hover:bg-stone-100/90"
-                    }`}
-                  >
-                    <p className="font-mono text-sm text-stone-700">
-                      {formatDate(row.label)}
+            return (
+              <article
+                key={group.label}
+                className="rounded-[1.5rem] border border-stone-200 bg-white/95 p-4 shadow-[0_16px_36px_-30px_rgba(68,46,20,0.35)]"
+              >
+                <div className="flex items-center justify-between gap-3 border-b border-stone-200 pb-3">
+                  <h4 className="text-base font-semibold capitalize text-stone-950">
+                    {group.label}
+                  </h4>
+                  <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-800">
+                    {badgeLabel}
+                  </span>
+                </div>
+
+                <div className="mt-3 space-y-2">
+                  {visibleRows.map((row, index) => (
+                    <div
+                      key={`${group.label}-${row.label}`}
+                      className={`flex items-center justify-between gap-4 rounded-2xl px-3 py-2 transition-colors duration-200 ${
+                        index === 0
+                          ? "bg-amber-50/90"
+                          : "bg-stone-50/75 hover:bg-stone-100/90"
+                      }`}
+                    >
+                      <p className="font-mono text-sm text-stone-700">
+                        {formatDate(row.label)}
+                      </p>
+                      <p className="font-mono text-sm font-semibold text-stone-950">
+                        {formatRevenu(row.value)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {hasMoreRows ? (
+                  <div className="mt-3 flex items-center justify-between gap-4 rounded-2xl border border-stone-200 bg-stone-50/80 px-4 py-3">
+                    <p className="text-sm text-stone-600">
+                      Showing {visibleRows.length} of {group.rows.length} days.
                     </p>
-                    <p className="font-mono text-sm font-semibold text-stone-950">
-                      {formatRevenu(row.value)}
-                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setVisibleCounts((currentCounts) => ({
+                          ...currentCounts,
+                          [group.label]: (currentCounts[group.label] ?? PAGE_SIZE) + PAGE_SIZE,
+                        }))
+                      }
+                      className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
+                    >
+                      Show 10 more
+                    </button>
                   </div>
-                ))}
-              </div>
-            </article>
-          ))}
+                ) : null}
+              </article>
+            );
+          })}
         </div>
       ) : (
         <p className="mt-4 text-sm text-rose-700">
@@ -174,79 +239,283 @@ export function PeriodTotalSection({
 }
 
 export function SnapshotStatsSection({
-  snapshot,
-}: {
-  snapshot: DashboardSnapshot;
-}) {
+}: Record<string, never>) {
+  const statConfigs: Array<{
+    key: SnapshotStatKey;
+    title: string;
+    kind: SnapshotStatResponse["kind"];
+    valueDisplay: ValueDisplay;
+    detailDisplay?: ValueDisplay;
+  }> = [
+    {
+      key: "todayTotal",
+      title: "Today Total",
+      kind: "single",
+      valueDisplay: "revenue",
+    },
+    {
+      key: "todayTotalPerServer",
+      title: "Today Total Per Server",
+      kind: "list",
+      valueDisplay: "revenue",
+    },
+    {
+      key: "bestServerToday",
+      title: "Best Server Today",
+      kind: "single",
+      valueDisplay: "text",
+      detailDisplay: "revenue",
+    },
+    {
+      key: "sevenDayTotal",
+      title: "7-Day Total",
+      kind: "single",
+      valueDisplay: "revenue",
+    },
+    {
+      key: "sevenDayDailyTotalsAllServers",
+      title: "7-Day Daily Totals",
+      kind: "list",
+      valueDisplay: "revenue",
+    },
+    {
+      key: "sevenDayTotalPerServer",
+      title: "7-Day Total Per Server",
+      kind: "list",
+      valueDisplay: "revenue",
+    },
+    {
+      key: "sevenDayAveragePerDay",
+      title: "7-Day Average/Day",
+      kind: "list",
+      valueDisplay: "revenue",
+    },
+    {
+      key: "allTimeAveragePerDay",
+      title: "All-Time Average/Day",
+      kind: "single",
+      valueDisplay: "revenue",
+    },
+    {
+      key: "shareOfTotal",
+      title: "Share Of Total",
+      kind: "list",
+      valueDisplay: "text",
+      detailDisplay: "revenue",
+    },
+    {
+      key: "bestDayEver",
+      title: "Best Day Ever",
+      kind: "single",
+      valueDisplay: "revenue",
+    },
+    {
+      key: "bestServer",
+      title: "Best Server Ever",
+      kind: "single",
+      valueDisplay: "text",
+      detailDisplay: "revenue",
+    },
+    {
+      key: "highestSingleEntry",
+      title: "Highest Single Entry",
+      kind: "single",
+      valueDisplay: "revenue",
+    },
+  ];
+  const [expandedKeys, setExpandedKeys] = useState<
+    Partial<Record<SnapshotStatKey, boolean>>
+  >({});
+  const [loadingKeys, setLoadingKeys] = useState<
+    Partial<Record<SnapshotStatKey, boolean>>
+  >({});
+  const [results, setResults] = useState<
+    Partial<Record<SnapshotStatKey, SnapshotStatResponse>>
+  >({});
+  const [errors, setErrors] = useState<Partial<Record<SnapshotStatKey, string>>>(
+    {},
+  );
+
+  async function toggleStat(key: SnapshotStatKey) {
+    if (expandedKeys[key]) {
+      setExpandedKeys((currentState) => ({
+        ...currentState,
+        [key]: false,
+      }));
+      return;
+    }
+
+    setExpandedKeys((currentState) => ({
+      ...currentState,
+      [key]: true,
+    }));
+    setLoadingKeys((currentState) => ({
+      ...currentState,
+      [key]: true,
+    }));
+    setErrors((currentState) => ({
+      ...currentState,
+      [key]: "",
+    }));
+    setResults((currentState) => ({
+      ...currentState,
+      [key]: undefined,
+    }));
+
+    try {
+      const response = await fetch(`/api/stats/${key}`, {
+        method: "GET",
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      const payload = (await response.json()) as
+        | SnapshotStatResponse
+        | { error?: string };
+
+      if (
+        !response.ok ||
+        !payload ||
+        !("kind" in payload) ||
+        !SNAPSHOT_STAT_KEYS.includes(key)
+      ) {
+        throw new Error(
+          "error" in payload && typeof payload.error === "string"
+            ? payload.error
+            : "Unable to load this stat right now.",
+        );
+      }
+
+      setResults((currentState) => ({
+        ...currentState,
+        [key]: payload,
+      }));
+    } catch (error) {
+      setErrors((currentState) => ({
+        ...currentState,
+        [key]:
+          error instanceof Error
+            ? error.message
+            : "Unable to load this stat right now.",
+      }));
+    } finally {
+      setLoadingKeys((currentState) => ({
+        ...currentState,
+        [key]: false,
+      }));
+    }
+  }
+
   return (
     <section className="rounded-[2rem] border border-stone-300/70 bg-white/90 p-6 shadow-[0_24px_80px_-40px_rgba(68,46,20,0.45)] backdrop-blur sm:p-8">
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-stone-950">Snapshot Stats</h2>
         <p className="mt-1 text-sm text-stone-600">
-          Each stat is loaded separately so one failing query does not take down
-          the rest.
+          Open any stat card when you want it. Each card fetches fresh data only
+          when requested.
         </p>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-        <SingleStatCard
-          title="Today Total"
-          result={snapshot.todayTotal}
-          valueDisplay="revenue"
-        />
-        <ListStatCard
-          title="Today Total Per Server"
-          result={snapshot.todayTotalPerServer}
-          valueDisplay="revenue"
-        />
-        <SingleStatCard
-          title="Best Server Today"
-          result={snapshot.bestServerToday}
-          valueDisplay="text"
-          detailDisplay="revenue"
-        />
-        <SingleStatCard
-          title="7-Day Total"
-          result={snapshot.sevenDayTotal}
-          valueDisplay="revenue"
-        />
-        <ListStatCard
-          title="7-Day Daily Totals"
-          result={snapshot.sevenDayDailyTotalsAllServers}
-          valueDisplay="revenue"
-        />
-        <ListStatCard
-          title="7-Day Total Per Server"
-          result={snapshot.sevenDayTotalPerServer}
-          valueDisplay="revenue"
-        />
-        <ListStatCard
-          title="7-Day Average/Day"
-          result={snapshot.sevenDayAveragePerDay}
-          valueDisplay="revenue"
-        />
-        <ListStatCard
-          title="Share Of Total"
-          result={snapshot.shareOfTotal}
-          valueDisplay="text"
-          detailDisplay="revenue"
-        />
-        <SingleStatCard
-          title="Best Day Ever"
-          result={snapshot.bestDayEver}
-          valueDisplay="revenue"
-        />
-        <SingleStatCard
-          title="Best Server Ever"
-          result={snapshot.bestServer}
-          valueDisplay="text"
-          detailDisplay="revenue"
-        />
-        <SingleStatCard
-          title="Highest Single Entry"
-          result={snapshot.highestSingleEntry}
-          valueDisplay="revenue"
-        />
+        {statConfigs.map((config) => {
+          const isExpanded = expandedKeys[config.key] ?? false;
+          const isLoading = loadingKeys[config.key] ?? false;
+          const payload = results[config.key];
+          const loadError = errors[config.key];
+
+          return (
+            <article
+              key={config.key}
+              className="rounded-[1.75rem] border border-stone-200 bg-stone-50/90 p-5 shadow-[0_16px_50px_-38px_rgba(68,46,20,0.55)]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                  {config.title}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void toggleStat(config.key)}
+                  className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
+                >
+                  {isExpanded ? "Hide" : "Show"}
+                </button>
+              </div>
+
+              {isExpanded ? (
+                <div className="mt-4">
+                  {isLoading ? (
+                    <p className="rounded-2xl border border-stone-200 bg-white/80 px-4 py-3 text-sm text-stone-600">
+                      Loading {config.title.toLowerCase()}...
+                    </p>
+                  ) : null}
+
+                  {loadError ? (
+                    <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                      {loadError}
+                    </p>
+                  ) : null}
+
+                  {!isLoading && !loadError && payload?.kind === "single" ? (
+                    <div>
+                      {payload.result.ok ? (
+                        <>
+                          <p className="font-mono text-2xl font-semibold text-stone-950">
+                            {formatStatValue(payload.result.value.value, config.valueDisplay)}
+                          </p>
+                          {payload.result.value.detail ? (
+                            <p className="mt-2 text-sm text-stone-600">
+                              {formatStatValue(
+                                payload.result.value.detail,
+                                config.detailDisplay ?? "text",
+                              )}
+                            </p>
+                          ) : null}
+                        </>
+                      ) : (
+                        <p className="text-sm text-rose-700">
+                          Unavailable right now: {payload.result.message}
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
+
+                  {!isLoading && !loadError && payload?.kind === "list" ? (
+                    <div className="space-y-3">
+                      {payload.result.ok ? (
+                        payload.result.value.rows.map((row) => (
+                          <div
+                            key={row.label}
+                            className="flex items-start justify-between gap-4 border-b border-stone-200 pb-3 last:border-b-0 last:pb-0"
+                          >
+                            <div>
+                              <p className="text-sm font-medium text-stone-700">
+                                {row.label}
+                              </p>
+                              {row.detail ? (
+                                <p className="mt-1 text-xs uppercase tracking-[0.14em] text-stone-500">
+                                  {formatStatValue(
+                                    row.detail,
+                                    config.detailDisplay ?? "text",
+                                  )}
+                                </p>
+                              ) : null}
+                            </div>
+                            <p className="text-right font-mono text-sm font-semibold text-stone-950">
+                              {formatStatValue(row.value, config.valueDisplay)}
+                            </p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-rose-700">
+                          Unavailable right now: {payload.result.message}
+                        </p>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </article>
+          );
+        })}
       </div>
     </section>
   );

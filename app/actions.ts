@@ -10,6 +10,21 @@ import {
   type EntryActionState,
 } from "@/lib/validation";
 
+function calculatePricePerM(amount: string, kamasQuantity: string) {
+  const numericAmount = Number.parseFloat(amount);
+  const numericQuantity = Number.parseFloat(kamasQuantity);
+
+  if (
+    !Number.isFinite(numericAmount) ||
+    !Number.isFinite(numericQuantity) ||
+    numericQuantity <= 0
+  ) {
+    return "0";
+  }
+
+  return ((numericAmount * 1_000_000) / numericQuantity).toString();
+}
+
 export async function createRevenueEntry(
   _prevState: EntryActionState,
   formData: FormData,
@@ -162,11 +177,15 @@ export async function createKamasSoldEntry(
 
   try {
     const prisma = getPrismaClient();
+    const pricePerM = calculatePricePerM(
+      parsed.data.amount,
+      parsed.data.kamasQuantity,
+    );
     const entry = await prisma.kamasSoldEntry.create({
       data: {
         amount: parsed.data.amount,
         kamasQuantity: parsed.data.kamasQuantity,
-        pricePerM: parsed.data.pricePerM,
+        pricePerM,
       },
     });
 
@@ -175,7 +194,7 @@ export async function createKamasSoldEntry(
     return {
       ...emptyActionState,
       success: true,
-      message: `Sale saved: amount ${formatRevenu(entry.amount.toString())}, quantity ${formatRevenu(entry.kamasQuantity.toString())}, price/M ${formatRevenu(entry.pricePerM.toString())}.`,
+      message: `Sale saved: amount ${formatRevenu(entry.amount.toString())}, quantity ${formatRevenu(entry.kamasQuantity.toString())}.`,
     };
   } catch (error) {
     console.error("Failed to create kamas sold entry", error);
@@ -214,12 +233,16 @@ export async function updateKamasSoldEntry(
 
   try {
     const prisma = getPrismaClient();
+    const pricePerM = calculatePricePerM(
+      parsed.data.amount,
+      parsed.data.kamasQuantity,
+    );
     await prisma.kamasSoldEntry.update({
       where: { id },
       data: {
         amount: parsed.data.amount,
         kamasQuantity: parsed.data.kamasQuantity,
-        pricePerM: parsed.data.pricePerM,
+        pricePerM,
       },
     });
   } catch (error) {

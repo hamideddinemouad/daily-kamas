@@ -20,7 +20,7 @@ export function CreateSalesEntryForm() {
 
   return (
     <form ref={formRef} action={formAction} className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
+      <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
         <label className="space-y-2">
           <span className="text-sm font-medium text-stone-700">Amount</span>
           <input
@@ -38,17 +38,6 @@ export function CreateSalesEntryForm() {
           </span>
           <input
             name="kamasQuantity"
-            type="text"
-            inputMode="decimal"
-            placeholder="0.00"
-            className="min-h-12 w-full rounded-2xl border border-stone-300 bg-stone-50 px-4 text-stone-900 outline-none transition focus:border-amber-500 focus:bg-white"
-          />
-        </label>
-
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-stone-700">Price Per M</span>
-          <input
-            name="pricePerM"
             type="text"
             inputMode="decimal"
             placeholder="0.00"

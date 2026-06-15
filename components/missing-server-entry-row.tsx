@@ -8,17 +8,18 @@ import type { ServerOption } from "@/lib/constants";
 
 type MissingServerEntryRowProps = {
   server: ServerOption;
+  hasEntryToday: boolean;
 };
 
 export function MissingServerEntryRow({
   server,
+  hasEntryToday,
 }: MissingServerEntryRowProps) {
   const [state, formAction] = useActionState(
     createRevenueEntry,
     emptyActionState,
   );
   const formRef = useRef<HTMLFormElement>(null);
-  const revenuInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (state.success) {
@@ -36,15 +37,21 @@ export function MissingServerEntryRow({
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
         <div className="space-y-2">
           <span className="text-sm font-medium text-stone-700">Server</span>
-          <div className="min-h-12 rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-950">
-            {server}
+          <div className="flex min-h-12 items-center gap-3 rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-950">
+            <span>{server}</span>
+            {hasEntryToday ? (
+              <span
+                aria-label={`${server} has an entry today`}
+                title="Entry saved today"
+                className="h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]"
+              />
+            ) : null}
           </div>
         </div>
 
         <label className="space-y-2">
           <span className="text-sm font-medium text-stone-700">Revenu</span>
           <input
-            ref={revenuInputRef}
             name="revenu"
             type="text"
             inputMode="decimal"
@@ -53,26 +60,7 @@ export function MissingServerEntryRow({
           />
         </label>
 
-        <div className="grid gap-2 md:grid-cols-[auto_auto]">
-          <SubmitButton
-            idleLabel={`Save ${server}`}
-            pendingLabel="Saving..."
-          />
-
-          <button
-            type="button"
-            onClick={() => {
-              if (revenuInputRef.current) {
-                revenuInputRef.current.value = "0";
-              }
-
-              formRef.current?.requestSubmit();
-            }}
-            className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
-          >
-            Quick 0
-          </button>
-        </div>
+        <SubmitButton idleLabel={`Save ${server}`} pendingLabel="Saving..." />
       </div>
 
       {state.error ? (
