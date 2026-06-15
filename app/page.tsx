@@ -37,6 +37,7 @@ export default async function Home() {
       eyebrow="Daily Kamas"
       title="Revenue Dashboard"
       description="Track monthly performance and fill missing revenue gaps from one focused dashboard, with deeper stats and entries available in the navigation."
+      compactHeader
     >
       {dashboardDataError ? (
         <section className="rounded-[2rem] border border-rose-200 bg-rose-50/90 px-5 py-4 text-sm text-rose-900">

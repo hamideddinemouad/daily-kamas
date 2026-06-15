@@ -25,6 +25,7 @@
 - Made `Today Total`, `Today Total Per Server`, and `Best Server Today` on Snapshot Stats load automatically and stay visible without a `Show` button
 - Made the `30-Day Daily Totals` card stay collapsed until clicked, including the first 10 rows
 - Made each 30-Day server card stay collapsed until clicked, with its own show/hide button and 10-row pagination after opening
+- Added a compact dashboard-only header with a much smaller nav and logout button to save vertical space on the home page
 
 ## 2026-05-23
 

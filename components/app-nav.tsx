@@ -14,6 +14,14 @@ const NAV_ITEMS = [
 ];
 
 export function AppNav() {
+  return <AppNavContent compact={false} />;
+}
+
+export function CompactAppNav() {
+  return <AppNavContent compact />;
+}
+
+function AppNavContent({ compact }: { compact: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -27,7 +35,11 @@ export function AppNav() {
             key={item.href}
             href={item.href}
             aria-current={isActive ? "page" : undefined}
-            className={`group inline-flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-xl border px-2.5 py-2 text-xs font-semibold whitespace-nowrap transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 sm:min-h-10 sm:px-3 sm:text-sm ${
+            className={`group inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-xl border font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 ${
+              compact
+                ? "min-h-8 px-2.5 py-1.5 text-xs"
+                : "min-h-9 px-2.5 py-2 text-xs sm:min-h-10 sm:px-3 sm:text-sm"
+            } ${
               isActive
                 ? "border-stone-900 bg-stone-900 text-stone-50 shadow-[0_10px_20px_-18px_rgba(28,25,23,0.65)]"
                 : "border-stone-200 bg-stone-50/80 text-stone-600 hover:border-amber-300 hover:bg-amber-50 hover:text-stone-950"
@@ -39,8 +51,13 @@ export function AppNav() {
                 isActive ? "bg-amber-300" : "bg-stone-300 group-hover:bg-amber-400"
               }`}
             />
-            <span className="sm:hidden">{item.shortLabel}</span>
-            <span className="hidden sm:inline">{item.label}</span>
+            <span>{compact ? item.shortLabel : null}</span>
+            {!compact ? (
+              <>
+                <span className="sm:hidden">{item.shortLabel}</span>
+                <span className="hidden sm:inline">{item.label}</span>
+              </>
+            ) : null}
           </Link>
         );
       })}
