@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatCreatedAt, formatDate, formatRevenu } from "@/lib/formatters";
 import {
   type GroupedMultiValueStat,
@@ -69,20 +69,38 @@ export function ListStatCard({
   valueDisplay,
   detailDisplay = "text",
   paginate = false,
+  collapsedByDefault = false,
+  revealLabel = "Show details",
+  hideLabel = "Hide details",
 }: {
   title: string;
   result: StatResult<MultiValueStat>;
   valueDisplay: ValueDisplay;
   detailDisplay?: ValueDisplay;
   paginate?: boolean;
+  collapsedByDefault?: boolean;
+  revealLabel?: string;
+  hideLabel?: string;
 }) {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [isExpanded, setIsExpanded] = useState(!collapsedByDefault);
 
   return (
     <article className="rounded-[1.75rem] border border-stone-200 bg-stone-50/90 p-5 shadow-[0_16px_50px_-38px_rgba(68,46,20,0.55)]">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
-        {title}
-      </p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+          {title}
+        </p>
+        {collapsedByDefault ? (
+          <button
+            type="button"
+            onClick={() => setIsExpanded((currentState) => !currentState)}
+            className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
+          >
+            {isExpanded ? hideLabel : revealLabel}
+          </button>
+        ) : null}
+      </div>
       {result.ok ? (() => {
         const visibleRows = paginate
           ? result.value.rows.slice(0, visibleCount)
@@ -90,6 +108,7 @@ export function ListStatCard({
         const hasMoreRows = paginate && visibleCount < result.value.rows.length;
 
         return (
+        isExpanded ? (
         <div className="mt-4 space-y-3">
           {visibleRows.map((row) => (
             <div
@@ -126,6 +145,7 @@ export function ListStatCard({
             </div>
           ) : null}
         </div>
+        ) : null
         );
       })() : (
         <p className="mt-3 text-sm text-rose-700">
@@ -142,14 +162,21 @@ export function PeriodTotalSection({
   badgeLabel,
   result,
   paginate = false,
+  collapseGroupsByDefault = false,
+  revealGroupLabel = "Show details",
+  hideGroupLabel = "Hide details",
 }: {
   title: string;
   description: string;
   badgeLabel: string;
   result: StatResult<GroupedMultiValueStat>;
   paginate?: boolean;
+  collapseGroupsByDefault?: boolean;
+  revealGroupLabel?: string;
+  hideGroupLabel?: string;
 }) {
   const [visibleCounts, setVisibleCounts] = useState<Record<string, number>>({});
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   return (
     <section className="mt-6 rounded-[1.9rem] border border-stone-200 bg-stone-50/80 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_18px_45px_-36px_rgba(68,46,20,0.45)] sm:p-6">
@@ -171,6 +198,9 @@ export function PeriodTotalSection({
               : group.rows.length;
             const visibleRows = group.rows.slice(0, visibleCount);
             const hasMoreRows = paginate && visibleCount < group.rows.length;
+            const isExpanded = collapseGroupsByDefault
+              ? (expandedGroups[group.label] ?? false)
+              : true;
 
             return (
               <article
@@ -181,49 +211,70 @@ export function PeriodTotalSection({
                   <h4 className="text-base font-semibold capitalize text-stone-950">
                     {group.label}
                   </h4>
-                  <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-800">
-                    {badgeLabel}
-                  </span>
-                </div>
-
-                <div className="mt-3 space-y-2">
-                  {visibleRows.map((row, index) => (
-                    <div
-                      key={`${group.label}-${row.label}`}
-                      className={`flex items-center justify-between gap-4 rounded-2xl px-3 py-2 transition-colors duration-200 ${
-                        index === 0
-                          ? "bg-amber-50/90"
-                          : "bg-stone-50/75 hover:bg-stone-100/90"
-                      }`}
-                    >
-                      <p className="font-mono text-sm text-stone-700">
-                        {formatDate(row.label)}
-                      </p>
-                      <p className="font-mono text-sm font-semibold text-stone-950">
-                        {formatRevenu(row.value)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-
-                {hasMoreRows ? (
-                  <div className="mt-3 flex items-center justify-between gap-4 rounded-2xl border border-stone-200 bg-stone-50/80 px-4 py-3">
-                    <p className="text-sm text-stone-600">
-                      Showing {visibleRows.length} of {group.rows.length} days.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setVisibleCounts((currentCounts) => ({
-                          ...currentCounts,
-                          [group.label]: (currentCounts[group.label] ?? PAGE_SIZE) + PAGE_SIZE,
-                        }))
-                      }
-                      className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
-                    >
-                      Show 10 more
-                    </button>
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-800">
+                      {badgeLabel}
+                    </span>
+                    {collapseGroupsByDefault ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedGroups((currentGroups) => ({
+                            ...currentGroups,
+                            [group.label]: !isExpanded,
+                          }))
+                        }
+                        className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
+                      >
+                        {isExpanded ? hideGroupLabel : revealGroupLabel}
+                      </button>
+                    ) : null}
                   </div>
+                </div>
+
+                {isExpanded ? (
+                  <>
+                    <div className="mt-3 space-y-2">
+                      {visibleRows.map((row, index) => (
+                        <div
+                          key={`${group.label}-${row.label}`}
+                          className={`flex items-center justify-between gap-4 rounded-2xl px-3 py-2 transition-colors duration-200 ${
+                            index === 0
+                              ? "bg-amber-50/90"
+                              : "bg-stone-50/75 hover:bg-stone-100/90"
+                          }`}
+                        >
+                          <p className="font-mono text-sm text-stone-700">
+                            {formatDate(row.label)}
+                          </p>
+                          <p className="font-mono text-sm font-semibold text-stone-950">
+                            {formatRevenu(row.value)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {hasMoreRows ? (
+                      <div className="mt-3 flex items-center justify-between gap-4 rounded-2xl border border-stone-200 bg-stone-50/80 px-4 py-3">
+                        <p className="text-sm text-stone-600">
+                          Showing {visibleRows.length} of {group.rows.length} days.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setVisibleCounts((currentCounts) => ({
+                              ...currentCounts,
+                              [group.label]:
+                                (currentCounts[group.label] ?? PAGE_SIZE) + PAGE_SIZE,
+                            }))
+                          }
+                          className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
+                        >
+                          Show 10 more
+                        </button>
+                      </div>
+                    ) : null}
+                  </>
                 ) : null}
               </article>
             );
@@ -246,18 +297,21 @@ export function SnapshotStatsSection({
     kind: SnapshotStatResponse["kind"];
     valueDisplay: ValueDisplay;
     detailDisplay?: ValueDisplay;
+    alwaysVisible?: boolean;
   }> = [
     {
       key: "todayTotal",
       title: "Today Total",
       kind: "single",
       valueDisplay: "revenue",
+      alwaysVisible: true,
     },
     {
       key: "todayTotalPerServer",
       title: "Today Total Per Server",
       kind: "list",
       valueDisplay: "revenue",
+      alwaysVisible: true,
     },
     {
       key: "bestServerToday",
@@ -265,6 +319,7 @@ export function SnapshotStatsSection({
       kind: "single",
       valueDisplay: "text",
       detailDisplay: "revenue",
+      alwaysVisible: true,
     },
     {
       key: "sevenDayTotal",
@@ -336,19 +391,13 @@ export function SnapshotStatsSection({
     {},
   );
 
-  async function toggleStat(key: SnapshotStatKey) {
-    if (expandedKeys[key]) {
+  async function loadStat(key: SnapshotStatKey, expand = true) {
+    if (expand) {
       setExpandedKeys((currentState) => ({
         ...currentState,
-        [key]: false,
+        [key]: true,
       }));
-      return;
     }
-
-    setExpandedKeys((currentState) => ({
-      ...currentState,
-      [key]: true,
-    }));
     setLoadingKeys((currentState) => ({
       ...currentState,
       [key]: true,
@@ -405,6 +454,26 @@ export function SnapshotStatsSection({
     }
   }
 
+  async function toggleStat(key: SnapshotStatKey) {
+    if (expandedKeys[key]) {
+      setExpandedKeys((currentState) => ({
+        ...currentState,
+        [key]: false,
+      }));
+      return;
+    }
+
+    await loadStat(key);
+  }
+
+  useEffect(() => {
+    for (const config of statConfigs) {
+      if (config.alwaysVisible && !expandedKeys[config.key] && !loadingKeys[config.key]) {
+        void loadStat(config.key);
+      }
+    }
+  }, [expandedKeys, loadingKeys]);
+
   return (
     <section className="rounded-[2rem] border border-stone-300/70 bg-white/90 p-6 shadow-[0_24px_80px_-40px_rgba(68,46,20,0.45)] backdrop-blur sm:p-8">
       <div className="mb-6">
@@ -417,7 +486,9 @@ export function SnapshotStatsSection({
 
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
         {statConfigs.map((config) => {
-          const isExpanded = expandedKeys[config.key] ?? false;
+          const isExpanded = config.alwaysVisible
+            ? true
+            : (expandedKeys[config.key] ?? false);
           const isLoading = loadingKeys[config.key] ?? false;
           const payload = results[config.key];
           const loadError = errors[config.key];
@@ -431,13 +502,15 @@ export function SnapshotStatsSection({
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
                   {config.title}
                 </p>
-                <button
-                  type="button"
-                  onClick={() => void toggleStat(config.key)}
-                  className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
-                >
-                  {isExpanded ? "Hide" : "Show"}
-                </button>
+                {!config.alwaysVisible ? (
+                  <button
+                    type="button"
+                    onClick={() => void toggleStat(config.key)}
+                    className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
+                  >
+                    {isExpanded ? "Hide" : "Show"}
+                  </button>
+                ) : null}
               </div>
 
               {isExpanded ? (

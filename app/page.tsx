@@ -47,17 +47,6 @@ export default async function Home() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)] xl:items-start">
         <section className="rounded-[2rem] border border-stone-300/70 bg-white/90 p-6 shadow-[0_24px_80px_-40px_rgba(68,46,20,0.45)] backdrop-blur sm:p-8">
-          <div className="mb-6">
-            <div>
-              <h2 className="text-xl font-semibold text-stone-950">
-                Revenue Entry Checklist
-              </h2>
-              <p className="mt-1 text-sm text-stone-600">
-                The date is stored automatically when the entry is created, and
-                today&apos;s completed servers are marked with a green dot.
-              </p>
-            </div>
-          </div>
           <MissingServerEntryList servers={serverEntryStatusToday} />
           {!databaseConfigured ? (
             <div className="mt-6 rounded-3xl border border-amber-300 bg-amber-100/80 px-5 py-4 text-sm text-amber-950">

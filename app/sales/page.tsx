@@ -1,13 +1,14 @@
 import { AppShell } from "@/components/app-shell";
 import { CreateSalesEntryForm } from "@/components/create-sales-entry-form";
 import { KamasSoldEntriesTable } from "@/components/kamas-sold-entries-table";
+import { SalesStatsSection } from "@/components/sales-stats-section";
 import { getSalesData } from "@/lib/sales";
 
 export const dynamic = "force-dynamic";
 
 export default async function SalesPage() {
   const salesData = await getSalesData();
-  const { entries, databaseConfigured, salesDataError } = salesData;
+  const { entries, summary, databaseConfigured, salesDataError } = salesData;
 
   return (
     <AppShell
@@ -22,6 +23,8 @@ export default async function SalesPage() {
       ) : null}
 
       <div className="grid gap-6">
+        <SalesStatsSection summary={summary} entryCount={entries.length} />
+
         <section className="rounded-[2rem] border border-stone-300/70 bg-white/90 p-6 shadow-[0_24px_80px_-40px_rgba(68,46,20,0.45)] backdrop-blur sm:p-8">
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-stone-950">

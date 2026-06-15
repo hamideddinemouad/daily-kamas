@@ -21,6 +21,9 @@ export default async function ThirtyDayTotalPage() {
         result={snapshot.thirtyDayDailyTotalsAllServers}
         valueDisplay="revenue"
         paginate
+        collapsedByDefault
+        revealLabel="Show 30-day daily totals"
+        hideLabel="Hide 30-day daily totals"
       />
       <PeriodTotalSection
         title="30-Day Total"
@@ -28,6 +31,9 @@ export default async function ThirtyDayTotalPage() {
         badgeLabel="30 days"
         result={snapshot.thirtyDayTotalBreakdown}
         paginate
+        collapseGroupsByDefault
+        revealGroupLabel="Show server"
+        hideGroupLabel="Hide server"
       />
     </AppShell>
   );

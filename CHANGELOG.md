@@ -13,6 +13,18 @@
 - Reworked the Snapshot Stats page to load each stat card on demand through an authenticated API route, with a fresh fetch every time a card is opened
 - Removed `price per M` from the Sales page UI and now derive/store it automatically from amount and kamas quantity on the server
 - Added an on-demand Snapshot Stats card for all-time average revenue per active day across the full entry history
+- Added a Sales Snapshot section with useful derived stats like total amount, total quantity, average amount per sale, average price per M, and latest sale time
+- Rounded Sales Snapshot stat values to whole numbers so the stats cards no longer show floats
+- Removed the `Avg Amount/Sale` card from the Sales Snapshot section
+- Changed `Avg Price/M` on the Sales Snapshot section to use `total amount / total quantity`
+- Kept the `Avg Price/M` Sales Snapshot card as a float while the other sales stats stay rounded
+- Made Sales Entries render only on demand and paginate in batches of 10 with a `Show 10 more` action
+- Updated Sales Snapshot stat formatting so total amount shows `DH`, total quantity ends with `M`, and average price shows as `number/M`
+- Removed the helper explanation text under the dashboard `Revenue Entry Checklist` heading
+- Removed the `Revenue Entry Checklist` heading from the dashboard card
+- Made `Today Total`, `Today Total Per Server`, and `Best Server Today` on Snapshot Stats load automatically and stay visible without a `Show` button
+- Made the `30-Day Daily Totals` card stay collapsed until clicked, including the first 10 rows
+- Made each 30-Day server card stay collapsed until clicked, with its own show/hide button and 10-row pagination after opening
 
 ## 2026-05-23
 
