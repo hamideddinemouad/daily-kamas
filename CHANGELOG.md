@@ -1,44 +1,14 @@
-# Changelog
-
 ## 2026-06-15
 
-- Replaced the dashboard's generic add-entry dropdown form with an always-visible server checklist
-- Added per-server green-dot status when at least one revenue entry already exists for today
-- Removed the dashboard checklist `Quick 0` action while keeping normal per-server entry submission available
-- Updated dashboard data shaping to expose today-status per server instead of the old missing-in-24-hours list
-- Limited the Recent Entries page to 10 rows at a time with a `Show 10 more` action for loading the next batch
-- Limited the 30-Day Total page lists to 10 rows at a time with `Show 10 more` loading for both the overall daily totals and each server breakdown card
-- Reworked the 7-Day Total page to lazy-load each server separately through an authenticated API route, so no server breakdown query runs until that specific server is opened
-- Removed client-side reuse for 7-Day server breakdowns so each server open always fetches fresh data
-- Reworked the Snapshot Stats page to load each stat card on demand through an authenticated API route, with a fresh fetch every time a card is opened
-- Removed `price per M` from the Sales page UI and now derive/store it automatically from amount and kamas quantity on the server
-- Added an on-demand Snapshot Stats card for all-time average revenue per active day across the full entry history
-- Added a Sales Snapshot section with useful derived stats like total amount, total quantity, average amount per sale, average price per M, and latest sale time
-- Rounded Sales Snapshot stat values to whole numbers so the stats cards no longer show floats
-- Removed the `Avg Amount/Sale` card from the Sales Snapshot section
-- Changed `Avg Price/M` on the Sales Snapshot section to use `total amount / total quantity`
-- Kept the `Avg Price/M` Sales Snapshot card as a float while the other sales stats stay rounded
-- Made Sales Entries render only on demand and paginate in batches of 10 with a `Show 10 more` action
-- Updated Sales Snapshot stat formatting so total amount shows `DH`, total quantity ends with `M`, and average price shows as `number/M`
-- Removed the helper explanation text under the dashboard `Revenue Entry Checklist` heading
-- Removed the `Revenue Entry Checklist` heading from the dashboard card
-- Made `Today Total`, `Today Total Per Server`, and `Best Server Today` on Snapshot Stats load automatically and stay visible without a `Show` button
-- Made the `30-Day Daily Totals` card stay collapsed until clicked, including the first 10 rows
-- Made each 30-Day server card stay collapsed until clicked, with its own show/hide button and 10-row pagination after opening
-- Added a compact dashboard-only header with a much smaller nav and logout button to save vertical space on the home page
-- Reduced the shared header to only the compact nav links and logout button with no extra page text
+- Reworked the dashboard entry experience into a denser per-server checklist with clearer today-status indicators and a more compact layout.
+- Simplified the shared navigation and header, including a dashboard-focused compact header and tighter nav presentation.
+- Reworked stats and breakdown pages to favor on-demand loading: Snapshot Stats load per card, 7-Day Total loads per server, and 30-Day Total now lazy-loads both daily totals and per-server breakdowns while keeping `Show 10 more` pagination.
+- Updated Recent Entries and Sales Entries to render the first 10 rows up front and fetch additional batches lazily through authenticated routes.
+- Expanded sales tracking with a Sales Snapshot section, server-side derived `price per M`, and clearer value formatting.
 
 ## 2026-05-23
 
-- Initial implementation of the Daily Kamas Revenue Tracker
-- Added Next.js App Router project with TypeScript and Tailwind CSS
-- Added Prisma schema for `RevenueEntry` and fixed `Server` enum
-- Added dashboard UI with create, edit, and delete flows
-- Added recent entries table, totals per server, and grand total
-- Added average revenu per active day for each server and overall
-- Added validation, loading states, and error states
-- Added setup and usage documentation in `README.md`
-- Switched runtime database integration to Neon using Prisma's Neon adapter
-- Removed local Docker PostgreSQL setup in favor of `.env`-based Neon configuration
-- Added a custom favicon for the app
-- Added site-wide single-user login UI with cookie-based auth
+- Initial implementation of the Daily Kamas Revenue Tracker with Next.js App Router, TypeScript, Tailwind CSS, and Prisma.
+- Added revenue entry management, dashboard totals, recent entries, and average-per-day reporting across servers.
+- Switched database integration to Neon through Prisma and documented project setup in `README.md`.
+- Added app polish including validation states, favicon support, and single-user cookie-based authentication.

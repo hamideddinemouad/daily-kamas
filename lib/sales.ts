@@ -16,6 +16,14 @@ export type SalesData = {
   salesDataError: string | null;
 };
 
+export type SalesEntriesPageData = {
+  entries: KamasSoldEntryView[];
+  totalCount: number;
+  summary: SalesSummary;
+  databaseConfigured: boolean;
+  salesDataError: string | null;
+};
+
 function createEmptySalesSummary(): SalesSummary {
   return {
     totalAmount: "0",
@@ -92,5 +100,81 @@ export async function getSalesData(): Promise<SalesData> {
       true,
       error instanceof Error ? error.message : "Unknown error",
     );
+  }
+}
+
+export async function getSalesEntriesPageData(
+  limit = 10,
+  offset = 0,
+): Promise<SalesEntriesPageData> {
+  if (!isDatabaseConfigured()) {
+    return {
+      entries: [],
+      totalCount: 0,
+      summary: createEmptySalesSummary(),
+      databaseConfigured: false,
+      salesDataError: null,
+    };
+  }
+
+  try {
+    const prisma = getPrismaClient();
+    const [entries, totalCount, aggregate] = await Promise.all([
+      prisma.kamasSoldEntry.findMany({
+        orderBy: [{ createdAt: "desc" }, { updatedAt: "desc" }],
+        skip: offset,
+        take: limit,
+      }),
+      prisma.kamasSoldEntry.count(),
+      prisma.kamasSoldEntry.aggregate({
+        _sum: {
+          amount: true,
+          kamasQuantity: true,
+        },
+        _count: {
+          _all: true,
+        },
+        _max: {
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    const totalAmount = Number.parseFloat(aggregate._sum.amount?.toString() ?? "0");
+    const totalKamasQuantity = Number.parseFloat(
+      aggregate._sum.kamasQuantity?.toString() ?? "0",
+    );
+    const averagePricePerM =
+      totalKamasQuantity > 0
+        ? (totalAmount / totalKamasQuantity).toString()
+        : "0";
+
+    return {
+      entries: entries.map((entry) => ({
+        id: entry.id,
+        amount: entry.amount.toString(),
+        kamasQuantity: entry.kamasQuantity.toString(),
+        createdAt: entry.createdAt.toISOString(),
+        updatedAt: entry.updatedAt.toISOString(),
+      })),
+      totalCount,
+      summary: {
+        totalAmount: totalAmount.toString(),
+        totalKamasQuantity: totalKamasQuantity.toString(),
+        averageAmountPerSale: calculateAverage(totalAmount, aggregate._count._all),
+        averagePricePerM,
+        latestSaleAt: aggregate._max.createdAt?.toISOString() ?? null,
+      },
+      databaseConfigured: true,
+      salesDataError: null,
+    };
+  } catch (error) {
+    return {
+      entries: [],
+      totalCount: 0,
+      summary: createEmptySalesSummary(),
+      databaseConfigured: true,
+      salesDataError: error instanceof Error ? error.message : "Unknown error",
+    };
   }
 }

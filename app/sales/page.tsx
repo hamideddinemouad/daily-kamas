@@ -2,13 +2,14 @@ import { AppShell } from "@/components/app-shell";
 import { CreateSalesEntryForm } from "@/components/create-sales-entry-form";
 import { KamasSoldEntriesTable } from "@/components/kamas-sold-entries-table";
 import { SalesStatsSection } from "@/components/sales-stats-section";
-import { getSalesData } from "@/lib/sales";
+import { getSalesEntriesPageData } from "@/lib/sales";
 
 export const dynamic = "force-dynamic";
 
 export default async function SalesPage() {
-  const salesData = await getSalesData();
-  const { entries, summary, databaseConfigured, salesDataError } = salesData;
+  const salesData = await getSalesEntriesPageData();
+  const { entries, totalCount, summary, databaseConfigured, salesDataError } =
+    salesData;
 
   return (
     <AppShell
@@ -23,7 +24,7 @@ export default async function SalesPage() {
       ) : null}
 
       <div className="grid gap-6">
-        <SalesStatsSection summary={summary} entryCount={entries.length} />
+        <SalesStatsSection summary={summary} entryCount={totalCount} />
 
         <section className="rounded-[2rem] border border-stone-300/70 bg-white/90 p-6 shadow-[0_24px_80px_-40px_rgba(68,46,20,0.45)] backdrop-blur sm:p-8">
           <div className="mb-6">
@@ -58,11 +59,14 @@ export default async function SalesPage() {
               </p>
             </div>
             <p className="text-sm text-stone-500">
-              {entries.length} {entries.length === 1 ? "entry" : "entries"}
+              {totalCount} {totalCount === 1 ? "entry" : "entries"}
             </p>
           </div>
 
-          <KamasSoldEntriesTable entries={entries} />
+          <KamasSoldEntriesTable
+            initialEntries={entries}
+            totalCount={totalCount}
+          />
         </section>
       </div>
     </AppShell>

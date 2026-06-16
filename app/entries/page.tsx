@@ -1,12 +1,13 @@
 import { AppShell } from "@/components/app-shell";
 import { RevenueEntriesTable } from "@/components/revenue-entries-table";
-import { getDashboardData } from "@/lib/revenue";
+import { getRecentRevenueEntriesPageData } from "@/lib/revenue";
 
 export const dynamic = "force-dynamic";
 
 export default async function EntriesPage() {
-  const dashboardData = await getDashboardData();
-  const { entries, databaseConfigured, dashboardDataError } = dashboardData;
+  const entriesPageData = await getRecentRevenueEntriesPageData();
+  const { entries, totalCount, databaseConfigured, entriesDataError } =
+    entriesPageData;
 
   return (
     <AppShell
@@ -14,7 +15,7 @@ export default async function EntriesPage() {
       title="Recent Revenue Entries"
       description="Browse every saved revenue entry in one place, ordered newest first with inline edit and delete actions."
     >
-      {dashboardDataError ? (
+      {entriesDataError ? (
         <section className="rounded-[2rem] border border-rose-200 bg-rose-50/90 px-5 py-4 text-sm text-rose-900">
           Live entry data could not be fully loaded. The page is showing a safe fallback state while the database issue is resolved.
         </section>
@@ -31,11 +32,11 @@ export default async function EntriesPage() {
             </p>
           </div>
           <p className="text-sm text-stone-500">
-            {entries.length} {entries.length === 1 ? "entry" : "entries"}
+            {totalCount} {totalCount === 1 ? "entry" : "entries"}
           </p>
         </div>
 
-        <RevenueEntriesTable entries={entries} />
+        <RevenueEntriesTable initialEntries={entries} totalCount={totalCount} />
 
         {!databaseConfigured ? (
           <div className="mt-6 rounded-3xl border border-amber-300 bg-amber-100/80 px-5 py-4 text-sm text-amber-950">

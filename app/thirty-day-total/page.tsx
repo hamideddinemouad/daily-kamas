@@ -1,40 +1,18 @@
 import { AppShell } from "@/components/app-shell";
-import {
-  ListStatCard,
-  PeriodTotalSection,
-} from "@/components/snapshot-stats-section";
-import { getDashboardSnapshot } from "@/lib/revenue";
+import { ThirtyDayDailyTotalsCard } from "@/components/thirty-day-daily-totals-card";
+import { ThirtyDayServerBreakdown } from "@/components/thirty-day-server-breakdown";
 
 export const dynamic = "force-dynamic";
 
 export default async function ThirtyDayTotalPage() {
-  const snapshot = await getDashboardSnapshot();
-
   return (
     <AppShell
       eyebrow="30-Day Total"
       title="30-Day Revenue Breakdown"
       description="Review each server across the latest 30-day window, with zero-filled dates kept visible so longer gaps and trends are easy to spot."
     >
-      <ListStatCard
-        title="30-Day Daily Totals"
-        result={snapshot.thirtyDayDailyTotalsAllServers}
-        valueDisplay="revenue"
-        paginate
-        collapsedByDefault
-        revealLabel="Show 30-day daily totals"
-        hideLabel="Hide 30-day daily totals"
-      />
-      <PeriodTotalSection
-        title="30-Day Total"
-        description="Daily revenue totals for each server across the last 30 days. Missing days stay visible with a zero value."
-        badgeLabel="30 days"
-        result={snapshot.thirtyDayTotalBreakdown}
-        paginate
-        collapseGroupsByDefault
-        revealGroupLabel="Show server"
-        hideGroupLabel="Hide server"
-      />
+      <ThirtyDayDailyTotalsCard />
+      <ThirtyDayServerBreakdown />
     </AppShell>
   );
 }

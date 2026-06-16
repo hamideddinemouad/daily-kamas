@@ -75,6 +75,20 @@ export type ServerBreakdownRows = {
   rows: SummaryStat[];
 };
 
+export type RevenueEntriesPageData = {
+  entries: {
+    id: string;
+    server: ServerOption;
+    date: string;
+    revenu: string;
+    createdAt: string;
+    updatedAt: string;
+  }[];
+  totalCount: number;
+  databaseConfigured: boolean;
+  entriesDataError: string | null;
+};
+
 export const SNAPSHOT_STAT_KEYS = [
   "todayTotal",
   "todayTotalPerServer",
@@ -217,12 +231,13 @@ function createRecentUtcDateKeys(days: number) {
   });
 }
 
-export async function getSevenDayBreakdownForServer(
+async function getRollingBreakdownForServer(
   server: ServerOption,
+  days: number,
 ): Promise<ServerBreakdownRows> {
   if (!isDatabaseConfigured()) {
     return {
-      rows: createRecentUtcDateKeys(7).map((date) => ({
+      rows: createRecentUtcDateKeys(days).map((date) => ({
         label: date,
         value: "0",
       })),
@@ -230,14 +245,14 @@ export async function getSevenDayBreakdownForServer(
   }
 
   const prisma = getPrismaClient();
-  const sevenDayRange = createUtcRollingRange(7);
-  const recentDateKeys = createRecentUtcDateKeys(7);
+  const range = createUtcRollingRange(days);
+  const recentDateKeys = createRecentUtcDateKeys(days);
   const entries = await prisma.revenueEntry.findMany({
     where: {
       server,
       date: {
-        gte: sevenDayRange.start,
-        lt: sevenDayRange.end,
+        gte: range.start,
+        lt: range.end,
       },
     },
     select: {
@@ -262,8 +277,128 @@ export async function getSevenDayBreakdownForServer(
     rows: recentDateKeys.map((date) => ({
       label: date,
       value: (totalsByDate.get(date) ?? 0).toString(),
-    })),
+      })),
   };
+}
+
+export async function getSevenDayBreakdownForServer(
+  server: ServerOption,
+): Promise<ServerBreakdownRows> {
+  return getRollingBreakdownForServer(server, 7);
+}
+
+export async function getThirtyDayBreakdownForServer(
+  server: ServerOption,
+): Promise<ServerBreakdownRows> {
+  return getRollingBreakdownForServer(server, 30);
+}
+
+export async function getThirtyDayDailyTotalsAllServersStat(): Promise<
+  StatResult<MultiValueStat>
+> {
+  if (!isDatabaseConfigured()) {
+    return {
+      ok: true,
+      value: {
+        rows: createRecentUtcDateKeys(30).map((date) => ({
+          label: date,
+          value: "0",
+        })),
+      },
+    };
+  }
+
+  try {
+    const prisma = getPrismaClient();
+    const thirtyDayRange = createUtcRollingRange(30);
+    const thirtyDayDateKeys = createRecentUtcDateKeys(30);
+    const entries = await prisma.revenueEntry.findMany({
+      where: {
+        date: {
+          gte: thirtyDayRange.start,
+          lt: thirtyDayRange.end,
+        },
+      },
+      select: {
+        date: true,
+        revenu: true,
+      },
+    });
+
+    const totalsByDate = new Map<string, number>();
+
+    for (const entry of entries) {
+      const dayKey = entry.date.toISOString().slice(0, 10);
+      const previousValue = totalsByDate.get(dayKey) ?? 0;
+
+      totalsByDate.set(
+        dayKey,
+        previousValue + Number.parseFloat(entry.revenu.toString()),
+      );
+    }
+
+    return {
+      ok: true,
+      value: {
+        rows: thirtyDayDateKeys.map((date) => ({
+          label: date,
+          value: (totalsByDate.get(date) ?? 0).toString(),
+        })),
+      },
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      message: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function getRecentRevenueEntriesPageData(
+  limit = 10,
+  offset = 0,
+): Promise<RevenueEntriesPageData> {
+  if (!isDatabaseConfigured()) {
+    return {
+      entries: [],
+      totalCount: 0,
+      databaseConfigured: false,
+      entriesDataError: null,
+    };
+  }
+
+  try {
+    const prisma = getPrismaClient();
+    const [entries, totalCount] = await Promise.all([
+      prisma.revenueEntry.findMany({
+        orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+        skip: offset,
+        take: limit,
+      }),
+      prisma.revenueEntry.count(),
+    ]);
+
+    return {
+      entries: entries.map((entry) => ({
+        id: entry.id,
+        server: entry.server,
+        date: entry.date.toISOString(),
+        revenu: entry.revenu.toString(),
+        createdAt: entry.createdAt.toISOString(),
+        updatedAt: entry.updatedAt.toISOString(),
+      })),
+      totalCount,
+      databaseConfigured: true,
+      entriesDataError: null,
+    };
+  } catch (error) {
+    return {
+      entries: [],
+      totalCount: 0,
+      databaseConfigured: true,
+      entriesDataError: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
 }
 
 export async function getSnapshotStatData(

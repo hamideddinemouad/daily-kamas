@@ -31,46 +31,44 @@ export function MissingServerEntryRow({
     <form
       ref={formRef}
       action={formAction}
-      className="rounded-3xl border border-stone-200 bg-stone-50 p-4"
+      className="rounded-[1.4rem] border border-stone-200 bg-stone-50/92 p-3 shadow-[0_10px_30px_-24px_rgba(68,46,20,0.45)]"
     >
       <input type="hidden" name="server" value={server} />
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
-        <div className="space-y-2">
-          <span className="text-sm font-medium text-stone-700">Server</span>
-          <div className="flex min-h-12 items-center gap-3 rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-950">
-            <span>{server}</span>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-sm font-semibold text-stone-950">
+            <span className="truncate capitalize">{server}</span>
             {hasEntryToday ? (
               <span
                 aria-label={`${server} has an entry today`}
                 title="Entry saved today"
-                className="h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]"
+                className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]"
               />
             ) : null}
           </div>
         </div>
+        <SubmitButton idleLabel="Save" pendingLabel="Saving..." />
+      </div>
 
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-stone-700">Revenu</span>
-          <input
-            name="revenu"
-            type="text"
-            inputMode="decimal"
-            placeholder="0.00"
-            className="min-h-12 w-full rounded-2xl border border-stone-300 bg-white px-4 text-stone-900 outline-none transition focus:border-amber-500"
-          />
-        </label>
-
-        <SubmitButton idleLabel={`Save ${server}`} pendingLabel="Saving..." />
+      <div className="mt-3">
+        <input
+          name="revenu"
+          type="text"
+          inputMode="decimal"
+          placeholder="0.00"
+          aria-label={`Revenue for ${server}`}
+          className="min-h-10 w-full rounded-xl border border-stone-300 bg-white px-3 text-sm text-stone-900 outline-none transition focus:border-amber-500"
+        />
       </div>
 
       {state.error ? (
-        <p className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
           {state.error}
         </p>
       ) : null}
 
       {state.message ? (
-        <p className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <p className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
           {state.message}
         </p>
       ) : null}

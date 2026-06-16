@@ -46,11 +46,11 @@ export default async function Home() {
         </section>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)] xl:items-start">
-        <section className="rounded-[2rem] border border-stone-300/70 bg-white/90 p-6 shadow-[0_24px_80px_-40px_rgba(68,46,20,0.45)] backdrop-blur sm:p-8">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(280px,0.45fr)] xl:items-start">
+        <section className="rounded-[1.8rem] border border-stone-300/70 bg-white/90 p-4 shadow-[0_24px_80px_-40px_rgba(68,46,20,0.45)] backdrop-blur sm:p-5">
           <MissingServerEntryList servers={serverEntryStatusToday} />
           {!databaseConfigured ? (
-            <div className="mt-6 rounded-3xl border border-amber-300 bg-amber-100/80 px-5 py-4 text-sm text-amber-950">
+            <div className="mt-4 rounded-3xl border border-amber-300 bg-amber-100/80 px-5 py-4 text-sm text-amber-950">
               Add your Neon `DATABASE_URL` in `.env` to enable live data. The
               UI is ready, but database actions are disabled until the connection
               string is set.
@@ -58,7 +58,7 @@ export default async function Home() {
           ) : null}
         </section>
 
-        <aside className="relative overflow-hidden rounded-[2rem] border border-amber-200/80 bg-[linear-gradient(145deg,rgba(255,251,235,0.98)_0%,rgba(254,243,199,0.96)_52%,rgba(255,237,213,0.98)_100%)] p-6 shadow-[0_24px_80px_-40px_rgba(120,53,15,0.42)] backdrop-blur sm:p-8">
+        <aside className="relative overflow-hidden rounded-[1.8rem] border border-amber-200/80 bg-[linear-gradient(145deg,rgba(255,251,235,0.98)_0%,rgba(254,243,199,0.96)_52%,rgba(255,237,213,0.98)_100%)] p-5 shadow-[0_24px_80px_-40px_rgba(120,53,15,0.42)] backdrop-blur sm:p-6">
           <div className="pointer-events-none absolute right-0 top-0 h-28 w-28 rounded-full bg-amber-300/20 blur-3xl" />
           <div className="pointer-events-none absolute bottom-0 left-0 h-24 w-24 rounded-full bg-orange-200/30 blur-2xl" />
 
@@ -75,16 +75,16 @@ export default async function Home() {
             <p className="mt-4 font-mono text-4xl font-semibold leading-none text-amber-950">
               {formatRevenu(grandTotal)}
             </p>
-            <p className="mt-4 text-sm leading-6 text-amber-950/80 sm:text-base">
+            <p className="mt-3 text-sm leading-6 text-amber-950/80">
               Total kamas revenue collected from all servers for the full current
               month window.
             </p>
 
-            <div className="mt-6 rounded-[1.6rem] border border-white/75 bg-white/72 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_18px_40px_-30px_rgba(120,53,15,0.45)]">
+            <div className="mt-5 rounded-[1.4rem] border border-white/75 bg-white/72 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_18px_40px_-30px_rgba(120,53,15,0.45)]">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
                 Avg Total Per Day
               </p>
-              <p className="mt-3 font-mono text-3xl font-semibold text-stone-950">
+              <p className="mt-2 font-mono text-3xl font-semibold text-stone-950">
                 {formatRevenu(grandAveragePerDay)}
               </p>
               <p className="mt-2 text-sm leading-6 text-stone-600">

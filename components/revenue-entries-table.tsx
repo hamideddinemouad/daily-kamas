@@ -1,17 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { RevenueEntryRow } from "@/components/revenue-entry-row";
 import type { RevenueEntryView } from "@/lib/types";
 
 type RevenueEntriesTableProps = {
-  entries: RevenueEntryView[];
+  initialEntries: RevenueEntryView[];
+  totalCount: number;
 };
 
 const PAGE_SIZE = 10;
 
-export function RevenueEntriesTable({ entries }: RevenueEntriesTableProps) {
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+export function RevenueEntriesTable({
+  initialEntries,
+  totalCount,
+}: RevenueEntriesTableProps) {
+  const [entries, setEntries] = useState(initialEntries);
+  const [error, setError] = useState("");
+  const [isLoadingMore, startLoadingMore] = useTransition();
 
   if (entries.length === 0) {
     return (
@@ -24,8 +30,40 @@ export function RevenueEntriesTable({ entries }: RevenueEntriesTableProps) {
     );
   }
 
-  const visibleEntries = entries.slice(0, visibleCount);
-  const hasMoreEntries = visibleCount < entries.length;
+  const hasMoreEntries = entries.length < totalCount;
+
+  function handleShowMore() {
+    startLoadingMore(async () => {
+      try {
+        setError("");
+        const response = await fetch(
+          `/api/revenue/entries?offset=${entries.length}&limit=${PAGE_SIZE}`,
+          {
+            method: "GET",
+            credentials: "same-origin",
+            cache: "no-store",
+          },
+        );
+        const payload = (await response.json()) as {
+          entries?: RevenueEntryView[];
+          totalCount?: number;
+          error?: string;
+        };
+
+        if (!response.ok || !payload.entries) {
+          throw new Error(payload.error ?? "Unable to load more entries.");
+        }
+
+        setEntries((currentEntries) => [...currentEntries, ...payload.entries!]);
+      } catch (loadError) {
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Unable to load more entries.",
+        );
+      }
+    });
+  }
 
   return (
     <div className="space-y-5">
@@ -41,24 +79,31 @@ export function RevenueEntriesTable({ entries }: RevenueEntriesTableProps) {
             </tr>
           </thead>
           <tbody>
-            {visibleEntries.map((entry) => (
+            {entries.map((entry) => (
               <RevenueEntryRow key={entry.id} entry={entry} />
             ))}
           </tbody>
         </table>
       </div>
 
+      {error ? (
+        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {error}
+        </p>
+      ) : null}
+
       {hasMoreEntries ? (
         <div className="flex items-center justify-between gap-4 rounded-3xl border border-stone-200 bg-stone-50 px-5 py-4">
           <p className="text-sm text-stone-600">
-            Showing {visibleEntries.length} of {entries.length} entries.
+            Showing {entries.length} of {totalCount} entries.
           </p>
           <button
             type="button"
-            onClick={() => setVisibleCount((currentCount) => currentCount + PAGE_SIZE)}
+            onClick={handleShowMore}
+            disabled={isLoadingMore}
             className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm font-semibold text-stone-900 transition hover:bg-stone-100"
           >
-            Show 10 more
+            {isLoadingMore ? "Loading..." : "Show 10 more"}
           </button>
         </div>
       ) : null}
