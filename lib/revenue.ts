@@ -66,6 +66,7 @@ export type DashboardSnapshot = {
   sevenDayTotalBreakdown: StatResult<GroupedMultiValueStat>;
   thirtyDayTotalBreakdown: StatResult<GroupedMultiValueStat>;
   sevenDayAveragePerDay: StatResult<MultiValueStat>;
+  allTimeAveragePerDayPerServer: StatResult<MultiValueStat>;
   lastEntryTimePerServer: StatResult<MultiValueStat>;
   highestSingleEntry: StatResult<SingleValueStat>;
   shareOfTotal: StatResult<MultiValueStat>;
@@ -98,6 +99,7 @@ export const SNAPSHOT_STAT_KEYS = [
   "sevenDayTotalPerServer",
   "sevenDayAveragePerDay",
   "allTimeAveragePerDay",
+  "allTimeAveragePerDayPerServer",
   "shareOfTotal",
   "bestDayEver",
   "bestServer",
@@ -138,6 +140,7 @@ function createFailedSnapshot(message: string): DashboardSnapshot {
     sevenDayTotalBreakdown: failed(),
     thirtyDayTotalBreakdown: failed(),
     sevenDayAveragePerDay: failed(),
+    allTimeAveragePerDayPerServer: failed(),
     lastEntryTimePerServer: failed(),
     highestSingleEntry: failed(),
     shareOfTotal: failed(),
@@ -229,6 +232,27 @@ function createRecentUtcDateKeys(days: number) {
     date.setUTCDate(date.getUTCDate() - index);
     return date.toISOString().slice(0, 10);
   });
+}
+
+function calculateCalendarDaysSinceFirstEntry(firstDate: Date | null | undefined) {
+  if (!firstDate) {
+    return 0;
+  }
+
+  const todayUtc = createUtcDayRange().start;
+  const firstUtc = new Date(
+    Date.UTC(
+      firstDate.getUTCFullYear(),
+      firstDate.getUTCMonth(),
+      firstDate.getUTCDate(),
+    ),
+  );
+  const millisecondsPerDay = 24 * 60 * 60 * 1000;
+  const differenceInDays = Math.floor(
+    (todayUtc.getTime() - firstUtc.getTime()) / millisecondsPerDay,
+  );
+
+  return Math.max(0, differenceInDays) + 1;
 }
 
 async function getRollingBreakdownForServer(
@@ -450,6 +474,8 @@ export async function getSnapshotStatData(
           kind: "single",
           result: { ok: true, value: { value: "0", detail: "No database yet" } },
         };
+      case "allTimeAveragePerDayPerServer":
+        return { kind: "list", result: { ok: true, value: { rows: emptyRows } } };
       case "shareOfTotal":
         return { kind: "list", result: { ok: true, value: { rows: emptyRows } } };
       case "bestDayEver":
@@ -484,6 +510,7 @@ export async function getSnapshotStatData(
       key === "sevenDayDailyTotalsAllServers" ||
       key === "sevenDayTotalPerServer" ||
       key === "sevenDayAveragePerDay" ||
+      key === "allTimeAveragePerDayPerServer" ||
       key === "shareOfTotal"
       ? { kind: "list", result: { ok: false, message } }
       : { kind: "single", result: { ok: false, message } };
@@ -707,21 +734,63 @@ export async function getSnapshotStatData(
       return {
         kind: "single",
         result: await getSafeStat(async () => {
-          const [aggregate, activeDates] = await Promise.all([
-            prisma.revenueEntry.aggregate({
+          const aggregate = await prisma.revenueEntry.aggregate({
+            _sum: { revenu: true },
+            _min: { date: true },
+          });
+
+          const calendarDayCount = calculateCalendarDaysSinceFirstEntry(
+            aggregate._min.date,
+          );
+          const total = aggregate._sum.revenu?.toString() ?? "0";
+          const firstDateLabel = aggregate._min.date?.toISOString().slice(0, 10);
+
+          return {
+            value: calculateAverage(total, calendarDayCount),
+            detail: firstDateLabel
+              ? `${calendarDayCount} calendar ${
+                  calendarDayCount === 1 ? "day" : "days"
+                } since ${firstDateLabel}`
+              : "No entries yet",
+          };
+        }),
+      };
+    case "allTimeAveragePerDayPerServer":
+      return {
+        kind: "list",
+        result: await getSafeStat(async () => {
+          const [groupedTotals, earliestEntry] = await Promise.all([
+            prisma.revenueEntry.groupBy({
+              by: ["server"],
               _sum: { revenu: true },
             }),
-            prisma.revenueEntry.groupBy({
-              by: ["date"],
+            prisma.revenueEntry.aggregate({
+              _min: { date: true },
             }),
           ]);
 
-          const activeDayCount = activeDates.length;
-          const total = aggregate._sum.revenu?.toString() ?? "0";
+          const totals = createEmptyStringRecord();
+          const sharedCalendarDayCount = calculateCalendarDaysSinceFirstEntry(
+            earliestEntry._min.date,
+          );
+          const sharedFirstDateLabel = earliestEntry._min.date
+            ?.toISOString()
+            .slice(0, 10);
+
+          for (const item of groupedTotals) {
+            totals[item.server] = item._sum.revenu?.toString() ?? "0";
+          }
 
           return {
-            value: calculateAverage(total, activeDayCount),
-            detail: `${activeDayCount} active ${activeDayCount === 1 ? "day" : "days"}`,
+            rows: SERVER_OPTIONS.map((server) => ({
+              label: server,
+              value: calculateAverage(totals[server], sharedCalendarDayCount),
+              detail: sharedFirstDateLabel
+                ? `${sharedCalendarDayCount} calendar ${
+                    sharedCalendarDayCount === 1 ? "day" : "days"
+                  } since ${sharedFirstDateLabel}`
+                : "No entries yet",
+            })),
           };
         }),
       };
@@ -1084,6 +1153,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
         value: createEmptyGroupedPeriodBreakdown(30),
       },
       sevenDayAveragePerDay: { ok: true, value: { rows: emptyRows } },
+      allTimeAveragePerDayPerServer: { ok: true, value: { rows: emptyRows } },
       lastEntryTimePerServer: {
         ok: true,
         value: {
@@ -1133,6 +1203,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     sevenDayTotalBreakdown,
     thirtyDayTotalBreakdown,
     sevenDayAveragePerDay,
+    allTimeAveragePerDayPerServer,
     lastEntryTimePerServer,
     highestSingleEntry,
     shareOfTotal,
@@ -1539,6 +1610,38 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
       };
     }),
     getSafeStat(async () => {
+      const [groupedTotals, groupedActiveDates] = await Promise.all([
+        prisma.revenueEntry.groupBy({
+          by: ["server"],
+          _sum: { revenu: true },
+        }),
+        prisma.revenueEntry.groupBy({
+          by: ["server", "date"],
+        }),
+      ]);
+
+      const totals = createEmptyStringRecord();
+      const activeDayCounts = createEmptyNumberRecord();
+
+      for (const item of groupedTotals) {
+        totals[item.server] = item._sum.revenu?.toString() ?? "0";
+      }
+
+      for (const item of groupedActiveDates) {
+        activeDayCounts[item.server] += 1;
+      }
+
+      return {
+        rows: SERVER_OPTIONS.map((server) => ({
+          label: server,
+          value: calculateAverage(totals[server], activeDayCounts[server]),
+          detail: `${activeDayCounts[server]} active ${
+            activeDayCounts[server] === 1 ? "day" : "days"
+          }`,
+        })),
+      };
+    }),
+    getSafeStat(async () => {
       const entry = await prisma.revenueEntry.findFirst({
         orderBy: [{ revenu: "desc" }, { createdAt: "desc" }],
       });
@@ -1603,6 +1706,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     sevenDayTotalBreakdown,
     thirtyDayTotalBreakdown,
     sevenDayAveragePerDay,
+    allTimeAveragePerDayPerServer,
     lastEntryTimePerServer,
     highestSingleEntry,
     shareOfTotal,

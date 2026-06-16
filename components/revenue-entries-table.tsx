@@ -11,6 +11,31 @@ type RevenueEntriesTableProps = {
 
 const PAGE_SIZE = 10;
 
+async function fetchRevenueEntriesPage(offset: number, limit: number) {
+  const response = await fetch(
+    `/api/revenue/entries?offset=${offset}&limit=${limit}`,
+    {
+      method: "GET",
+      credentials: "same-origin",
+      cache: "no-store",
+    },
+  );
+  const payload = (await response.json()) as {
+    entries?: RevenueEntryView[];
+    totalCount?: number;
+    error?: string;
+  };
+
+  if (!response.ok || !payload.entries || typeof payload.totalCount !== "number") {
+    throw new Error(payload.error ?? "Unable to load entries.");
+  }
+
+  return {
+    entries: payload.entries,
+    totalCount: payload.totalCount,
+  };
+}
+
 export function RevenueEntriesTable({
   initialEntries,
   totalCount,
@@ -20,7 +45,7 @@ export function RevenueEntriesTable({
   const [error, setError] = useState("");
   const [isLoadingMore, startLoadingMore] = useTransition();
 
-  if (entries.length === 0) {
+  if (entryCount === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-stone-300 bg-stone-50 px-6 py-10 text-center">
         <p className="text-base font-medium text-stone-800">No entries yet.</p>
@@ -44,25 +69,9 @@ export function RevenueEntriesTable({
     startLoadingMore(async () => {
       try {
         setError("");
-        const response = await fetch(
-          `/api/revenue/entries?offset=${entries.length}&limit=${PAGE_SIZE}`,
-          {
-            method: "GET",
-            credentials: "same-origin",
-            cache: "no-store",
-          },
-        );
-        const payload = (await response.json()) as {
-          entries?: RevenueEntryView[];
-          totalCount?: number;
-          error?: string;
-        };
+        const nextPage = await fetchRevenueEntriesPage(entries.length, PAGE_SIZE);
 
-        if (!response.ok || !payload.entries) {
-          throw new Error(payload.error ?? "Unable to load more entries.");
-        }
-
-        setEntries((currentEntries) => [...currentEntries, ...payload.entries!]);
+        setEntries((currentEntries) => [...currentEntries, ...nextPage.entries]);
       } catch (loadError) {
         setError(
           loadError instanceof Error

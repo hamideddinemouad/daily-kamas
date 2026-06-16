@@ -352,6 +352,13 @@ export function SnapshotStatsSection({
       valueDisplay: "revenue",
     },
     {
+      key: "allTimeAveragePerDayPerServer",
+      title: "All-Time Average/Day Per Server",
+      kind: "list",
+      valueDisplay: "revenue",
+      detailDisplay: "text",
+    },
+    {
       key: "shareOfTotal",
       title: "Share Of Total",
       kind: "list",
