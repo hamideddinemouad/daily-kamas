@@ -26,6 +26,7 @@
 - Made the `30-Day Daily Totals` card stay collapsed until clicked, including the first 10 rows
 - Made each 30-Day server card stay collapsed until clicked, with its own show/hide button and 10-row pagination after opening
 - Added a compact dashboard-only header with a much smaller nav and logout button to save vertical space on the home page
+- Reduced the shared header to only the compact nav links and logout button with no extra page text
 
 ## 2026-05-23
 
