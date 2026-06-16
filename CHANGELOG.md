@@ -5,6 +5,7 @@
 - Reworked stats and breakdown pages to favor on-demand loading: Snapshot Stats load per card, 7-Day Total loads per server, and 30-Day Total now lazy-loads both daily totals and per-server breakdowns while keeping `Show 10 more` pagination.
 - Updated Recent Entries and Sales Entries to render the first 10 rows up front and fetch additional batches lazily through authenticated routes.
 - Expanded sales tracking with a Sales Snapshot section, server-side derived `price per M`, and clearer value formatting.
+- Fixed client-side entry tables so successful deletes immediately remove rows and update counts after lazy-loading was introduced.
 
 ## 2026-05-23
 

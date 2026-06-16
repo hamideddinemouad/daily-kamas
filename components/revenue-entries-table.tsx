@@ -16,6 +16,7 @@ export function RevenueEntriesTable({
   totalCount,
 }: RevenueEntriesTableProps) {
   const [entries, setEntries] = useState(initialEntries);
+  const [entryCount, setEntryCount] = useState(totalCount);
   const [error, setError] = useState("");
   const [isLoadingMore, startLoadingMore] = useTransition();
 
@@ -30,7 +31,14 @@ export function RevenueEntriesTable({
     );
   }
 
-  const hasMoreEntries = entries.length < totalCount;
+  const hasMoreEntries = entries.length < entryCount;
+
+  function handleDelete(id: string) {
+    setEntries((currentEntries) =>
+      currentEntries.filter((entry) => entry.id !== id),
+    );
+    setEntryCount((currentCount) => Math.max(0, currentCount - 1));
+  }
 
   function handleShowMore() {
     startLoadingMore(async () => {
@@ -80,7 +88,11 @@ export function RevenueEntriesTable({
           </thead>
           <tbody>
             {entries.map((entry) => (
-              <RevenueEntryRow key={entry.id} entry={entry} />
+              <RevenueEntryRow
+                key={entry.id}
+                entry={entry}
+                onDelete={handleDelete}
+              />
             ))}
           </tbody>
         </table>
@@ -95,7 +107,7 @@ export function RevenueEntriesTable({
       {hasMoreEntries ? (
         <div className="flex items-center justify-between gap-4 rounded-3xl border border-stone-200 bg-stone-50 px-5 py-4">
           <p className="text-sm text-stone-600">
-            Showing {entries.length} of {totalCount} entries.
+            Showing {entries.length} of {entryCount} entries.
           </p>
           <button
             type="button"

@@ -9,16 +9,25 @@ import { SubmitButton } from "@/components/submit-button";
 
 type KamasSoldEntryRowProps = {
   entry: KamasSoldEntryView;
+  onDelete?: (id: string) => void;
 };
 
-export function KamasSoldEntryRow({ entry }: KamasSoldEntryRowProps) {
+export function KamasSoldEntryRow({ entry, onDelete }: KamasSoldEntryRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [updateState, updateAction] = useActionState(
     updateKamasSoldEntry,
     emptyActionState,
   );
   const [deleteState, deleteAction] = useActionState(
-    async () => deleteKamasSoldEntry(entry.id),
+    async () => {
+      const result = await deleteKamasSoldEntry(entry.id);
+
+      if (result.success) {
+        onDelete?.(entry.id);
+      }
+
+      return result;
+    },
     emptyActionState,
   );
 

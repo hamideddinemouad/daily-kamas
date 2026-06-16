@@ -10,16 +10,25 @@ import { SubmitButton } from "@/components/submit-button";
 
 type RevenueEntryRowProps = {
   entry: RevenueEntryView;
+  onDelete?: (id: string) => void;
 };
 
-export function RevenueEntryRow({ entry }: RevenueEntryRowProps) {
+export function RevenueEntryRow({ entry, onDelete }: RevenueEntryRowProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [updateState, updateAction] = useActionState(
     updateRevenueEntry,
     emptyActionState,
   );
   const [deleteState, deleteAction] = useActionState(
-    async () => deleteRevenueEntry(entry.id),
+    async () => {
+      const result = await deleteRevenueEntry(entry.id);
+
+      if (result.success) {
+        onDelete?.(entry.id);
+      }
+
+      return result;
+    },
     emptyActionState,
   );
 

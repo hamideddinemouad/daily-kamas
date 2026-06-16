@@ -17,6 +17,7 @@ export function KamasSoldEntriesTable({
 }: KamasSoldEntriesTableProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [entries, setEntries] = useState(initialEntries);
+  const [entryCount, setEntryCount] = useState(totalCount);
   const [error, setError] = useState("");
   const [isLoadingMore, startLoadingMore] = useTransition();
 
@@ -31,7 +32,14 @@ export function KamasSoldEntriesTable({
     );
   }
 
-  const hasMoreEntries = entries.length < totalCount;
+  const hasMoreEntries = entries.length < entryCount;
+
+  function handleDelete(id: string) {
+    setEntries((currentEntries) =>
+      currentEntries.filter((entry) => entry.id !== id),
+    );
+    setEntryCount((currentCount) => Math.max(0, currentCount - 1));
+  }
 
   function handleShowMore() {
     startLoadingMore(async () => {
@@ -92,7 +100,11 @@ export function KamasSoldEntriesTable({
               </thead>
               <tbody>
                 {entries.map((entry) => (
-                  <KamasSoldEntryRow key={entry.id} entry={entry} />
+                  <KamasSoldEntryRow
+                    key={entry.id}
+                    entry={entry}
+                    onDelete={handleDelete}
+                  />
                 ))}
               </tbody>
             </table>
@@ -107,7 +119,7 @@ export function KamasSoldEntriesTable({
           {hasMoreEntries ? (
             <div className="flex items-center justify-between gap-4 rounded-3xl border border-stone-200 bg-stone-50 px-5 py-4">
               <p className="text-sm text-stone-600">
-                Showing {entries.length} of {totalCount} sales.
+                Showing {entries.length} of {entryCount} sales.
               </p>
               <button
                 type="button"
