@@ -14,6 +14,7 @@ type DashboardData = {
   averageByServer: Record<ServerOption, string>;
   activeDaysByServer: Record<ServerOption, number>;
   grandTotal: string;
+  todayTotal: string;
   grandAveragePerDay: string;
   activeDayCount: number;
   serverEntryStatusToday: {
@@ -194,6 +195,7 @@ function createEmptyDashboardData(
     averageByServer: createEmptyStringRecord(),
     activeDaysByServer: createEmptyNumberRecord(),
     grandTotal: "0",
+    todayTotal: "0",
     grandAveragePerDay: "0",
     activeDayCount: 0,
     serverEntryStatusToday: SERVER_OPTIONS.map((server) => ({
@@ -1005,7 +1007,8 @@ export async function getDashboardData() {
     // The dashboard's monthly average is based on days elapsed so far in the
     // current UTC month, including today.
     const elapsedDaysInMonth = getElapsedUtcDaysInMonth();
-    const [entries, groupedTotals, grandTotalAggregate] = await Promise.all([
+    const [entries, groupedTotals, grandTotalAggregate, todayTotalAggregate] =
+      await Promise.all([
       prisma.revenueEntry.findMany({
         orderBy: [{ date: "desc" }, { createdAt: "desc" }],
       }),
@@ -1018,6 +1021,15 @@ export async function getDashboardData() {
           date: {
             gte: monthRange.start,
             lt: monthRange.end,
+          },
+        },
+        _sum: { revenu: true },
+      }),
+      prisma.revenueEntry.aggregate({
+        where: {
+          date: {
+            gte: todayRange.start,
+            lt: todayRange.end,
           },
         },
         _sum: { revenu: true },
@@ -1057,6 +1069,7 @@ export async function getDashboardData() {
     );
 
     const grandTotal = grandTotalAggregate._sum.revenu?.toString() ?? "0";
+    const todayTotal = todayTotalAggregate._sum.revenu?.toString() ?? "0";
     // Business rule: the daily entry checklist resets at midnight UTC, not
     // exactly 24 hours after the last entry was created.
     const serversWithEntryToday = new Set(
@@ -1085,6 +1098,7 @@ export async function getDashboardData() {
       averageByServer,
       activeDaysByServer,
       grandTotal,
+      todayTotal,
       grandAveragePerDay: calculateAverage(grandTotal, elapsedDaysInMonth),
       activeDayCount: elapsedDaysInMonth,
       serverEntryStatusToday,

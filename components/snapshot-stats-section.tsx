@@ -300,13 +300,6 @@ export function SnapshotStatsSection({
     alwaysVisible?: boolean;
   }> = [
     {
-      key: "todayTotal",
-      title: "Today Total",
-      kind: "single",
-      valueDisplay: "revenue",
-      alwaysVisible: true,
-    },
-    {
       key: "todayTotalPerServer",
       title: "Today Total Per Server",
       kind: "list",

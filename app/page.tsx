@@ -25,6 +25,7 @@ export default async function Home() {
   const currentMonthRange = formatCurrentMonthRange();
   const {
     grandTotal,
+    todayTotal,
     grandAveragePerDay,
     activeDayCount,
     serverEntryStatusToday,
@@ -49,6 +50,22 @@ export default async function Home() {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(280px,0.45fr)] xl:items-start">
         <section className="rounded-[1.8rem] border border-stone-300/70 bg-white/90 p-4 shadow-[0_24px_80px_-40px_rgba(68,46,20,0.45)] backdrop-blur sm:p-5">
           <MissingServerEntryList servers={serverEntryStatusToday} />
+          <div className="mt-4 rounded-[1.5rem] border border-amber-200/80 bg-[linear-gradient(145deg,rgba(255,251,235,0.96)_0%,rgba(254,243,199,0.88)_100%)] p-4 shadow-[0_18px_50px_-36px_rgba(120,53,15,0.35)]">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-800">
+                Today Total
+              </p>
+              <span className="rounded-full border border-amber-300/80 bg-white/75 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-800">
+                UTC day
+              </span>
+            </div>
+            <p className="mt-3 font-mono text-3xl font-semibold text-amber-950">
+              {formatRevenu(todayTotal)}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-amber-950/75">
+              Combined revenue across all servers for today&apos;s entries.
+            </p>
+          </div>
           {!databaseConfigured ? (
             <div className="mt-4 rounded-3xl border border-amber-300 bg-amber-100/80 px-5 py-4 text-sm text-amber-950">
               Add your Neon `DATABASE_URL` in `.env` to enable live data. The

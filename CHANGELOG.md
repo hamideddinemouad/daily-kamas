@@ -1,3 +1,8 @@
+## 2026-06-22
+
+- Moved the `Today Total` metric out of Snapshot Stats and into its own dashboard panel directly below the server entry forms.
+- Reduced dashboard page height by using the compact shell spacing and switching the server entry form grid to three columns earlier on desktop to avoid page scrolling.
+
 ## 2026-06-15
 
 - Reworked the dashboard entry experience into a denser per-server checklist with clearer today-status indicators and a more compact layout.
