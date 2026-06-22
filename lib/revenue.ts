@@ -20,6 +20,7 @@ type DashboardData = {
   serverEntryStatusToday: {
     server: ServerOption;
     hasEntryToday: boolean;
+    todayRevenue: string;
   }[];
   databaseConfigured: boolean;
   dashboardDataError: string | null;
@@ -201,6 +202,7 @@ function createEmptyDashboardData(
     serverEntryStatusToday: SERVER_OPTIONS.map((server) => ({
       server,
       hasEntryToday: false,
+      todayRevenue: "0",
     })),
     databaseConfigured,
     dashboardDataError,
@@ -1072,17 +1074,27 @@ export async function getDashboardData() {
     const todayTotal = todayTotalAggregate._sum.revenu?.toString() ?? "0";
     // Business rule: the daily entry checklist resets at midnight UTC, not
     // exactly 24 hours after the last entry was created.
-    const serversWithEntryToday = new Set(
-      entries
-        .filter(
-          (entry) =>
-            entry.date >= todayRange.start && entry.date < todayRange.end,
-        )
-        .map((entry) => entry.server),
+    const todayEntries = entries.filter(
+      (entry) => entry.date >= todayRange.start && entry.date < todayRange.end,
     );
+    const serversWithEntryToday = new Set(
+      todayEntries.map((entry) => entry.server),
+    );
+    const todayRevenueByServer = SERVER_OPTIONS.reduce<
+      Record<ServerOption, number>
+    >((accumulator, server) => {
+      accumulator[server] = 0;
+      return accumulator;
+    }, {} as Record<ServerOption, number>);
+
+    for (const entry of todayEntries) {
+      todayRevenueByServer[entry.server] += Number(entry.revenu);
+    }
+
     const serverEntryStatusToday = SERVER_OPTIONS.map((server) => ({
       server,
       hasEntryToday: serversWithEntryToday.has(server),
+      todayRevenue: todayRevenueByServer[server].toString(),
     }));
 
     return {

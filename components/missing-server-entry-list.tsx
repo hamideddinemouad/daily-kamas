@@ -5,6 +5,7 @@ type MissingServerEntryListProps = {
   servers: {
     server: ServerOption;
     hasEntryToday: boolean;
+    todayRevenue: string;
   }[];
 };
 
@@ -17,11 +18,12 @@ export function MissingServerEntryList({
 
   return (
     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-      {servers.map(({ server, hasEntryToday }) => (
+      {servers.map(({ server, hasEntryToday, todayRevenue }) => (
         <MissingServerEntryRow
           key={server}
           server={server}
           hasEntryToday={hasEntryToday}
+          todayRevenue={todayRevenue}
         />
       ))}
     </div>

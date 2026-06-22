@@ -3,23 +3,27 @@
 import { useActionState, useEffect, useRef } from "react";
 import { createRevenueEntry } from "@/app/actions";
 import { SubmitButton } from "@/components/submit-button";
+import { formatRevenu } from "@/lib/formatters";
 import { emptyActionState } from "@/lib/validation";
 import type { ServerOption } from "@/lib/constants";
 
 type MissingServerEntryRowProps = {
   server: ServerOption;
   hasEntryToday: boolean;
+  todayRevenue: string;
 };
 
 export function MissingServerEntryRow({
   server,
   hasEntryToday,
+  todayRevenue,
 }: MissingServerEntryRowProps) {
   const [state, formAction] = useActionState(
     createRevenueEntry,
     emptyActionState,
   );
   const formRef = useRef<HTMLFormElement>(null);
+  const hasRevenueToday = Number.parseFloat(todayRevenue) > 0;
 
   useEffect(() => {
     if (state.success) {
@@ -39,11 +43,17 @@ export function MissingServerEntryRow({
           <div className="flex items-center gap-2 text-sm font-semibold text-stone-950">
             <span className="truncate capitalize">{server}</span>
             {hasEntryToday ? (
-              <span
-                aria-label={`${server} has an entry today`}
-                title="Entry saved today"
-                className="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500 shadow-[0_0_0_3px_rgba(16,185,129,0.18)]"
-              />
+              <>
+                {hasRevenueToday ? (
+                  <span
+                    aria-label={`${server} revenue today ${formatRevenu(todayRevenue)}`}
+                    title={`Revenue saved today: ${formatRevenu(todayRevenue)}`}
+                    className="inline-flex items-center rounded-full border border-amber-300 bg-amber-100 px-2.5 py-1 text-xs font-bold tracking-[0.08em] text-amber-950 shadow-[0_6px_18px_-14px_rgba(120,53,15,0.45)]"
+                  >
+                    <span>{formatRevenu(todayRevenue)}</span>
+                  </span>
+                ) : null}
+              </>
             ) : null}
           </div>
         </div>

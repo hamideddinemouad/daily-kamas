@@ -1,5 +1,8 @@
 ## 2026-06-22
 
+- Removed the dashboard row's green today-status dot so servers with saved same-day revenue now show only the revenue number badge.
+- Removed the decorative icon from the dashboard revenue badge and increased its size and contrast so same-day server revenue is easier to spot beside the green status dot.
+- Added a compact revenue badge beside the dashboard's green today-status dot so each server row now shows the saved same-day total when it is above zero.
 - Moved the `Today Total` metric out of Snapshot Stats and into its own dashboard panel directly below the server entry forms.
 - Reduced dashboard page height by using the compact shell spacing and switching the server entry form grid to three columns earlier on desktop to avoid page scrolling.
 
